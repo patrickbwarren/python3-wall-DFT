@@ -21,18 +21,16 @@
 # along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-import argparse
 import wall_dft
 
-parser = argparse.ArgumentParser(description='DPD wall profile one off calculator')
-wall_dft.common_arguments(parser)
-parser.add_argument('--zcut', default=4.0, type=float, help='cut-off in z, default 4.0')
-parser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
-parser.add_argument('--show', action='store_true', help='plot the density profile')
-parser.add_argument('--vanilla', action='store_true', help='use vanilla wall model')
-parser.add_argument('--conversion-factor', default=12.928, type=float, help='conversion factor kT/rc² = 12.928 mN.m')
-parser.add_argument('-o', '--output', help='output plot to, eg, pdf')
-args = parser.parse_args()
+eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile one off calculator')
+eparser.add_argument('--zcut', default=4.0, type=float, help='cut-off in z, default 4.0')
+eparser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
+eparser.add_argument('--vanilla', action='store_true', help='use vanilla wall model')
+eparser.add_argument('--conversion-factor', default=12.928, type=float, help='conversion factor kT/rc² = 12.928 mN.m')
+eparser.add_argument('-s', '--show', action='store_true', help='plot the density profile')
+eparser.add_argument('-o', '--output', help='output plot to, eg, pdf')
+args = eparser.parse_args()
 
 max_iters = eval(args.max_iters.replace('^', '**'))
 
@@ -40,12 +38,17 @@ wall = wall_dft.Wall(dz=args.dz, zmax=args.zmax)
 
 print(wall.about)
 
-wall.rhob = eval(args.rhob)
-wall.Abulk = eval(args.Abulk)
-wall.Awall = eval(args.Awall)
-wall.model = 'half space' if args.half_space else 'vanilla'
+rhob = eval(args.rhob)
+Abulk = eval(args.Abulk)
+Awall = eval(args.Awall)
 
-wall.solve(max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
+wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
+print(wall.model)
+
+wall.make_kernel(Abulk)
+print(wall.kernel)
+
+wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
 
 print(wall.properties)
 print('Surface tension γ = %g mN.m' % (wall.gamma * args.conversion_factor))

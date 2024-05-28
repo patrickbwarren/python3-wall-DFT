@@ -26,13 +26,12 @@ import wall_dft
 import numpy as np
 import pandas as pd
 
-parser = argparse.ArgumentParser(description='DFT wall property table calculator')
-wall_dft.common_arguments(parser)
-parser.awall.default = '0,40,5'
-parser.awall.help='wall repulsion amplitudes, default 0,40,5'
-parser.add_argument('--conversion-factor', default=12.928, type=float, help='conversion factor kT/rc² = 12.928 mN.m')
-parser.add_argument('-o', '--output', default=None, help='output data to, eg, .dat')
-args = parser.parse_args()
+eparser = wall_dft.ExtendedArgumentParser(description='DFT wall property table calculator')
+eparser.awall.default = '0,40,5'
+eparser.awall.help='wall repulsion amplitudes, default 0,40,5'
+eparser.add_argument('--conversion-factor', default=12.928, type=float, help='conversion factor kT/rc² = 12.928 mN.m')
+eparser.add_argument('-o', '--output', default=None, help='output data to, eg, .dat')
+args = eparser.parse_args()
 
 max_iters = eval(args.max_iters.replace('^', '**'))
 
@@ -59,4 +58,3 @@ if args.output:
     print(', '.join([f'{s}({i+1})' for i, s in enumerate(df.columns)]), 'written to', args.output)
 else:
     print(df.set_index('Awall'))
-
