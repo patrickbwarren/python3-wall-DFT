@@ -73,7 +73,6 @@ class Wall:
         self.not_above_zmax_minus_one = ~(self.z > self.zmax - 1.0) # ditto
         self.domain = self.not_inside_wall & self.not_above_zmax_minus_one # ditto
         self.idx = np.round(self.z/self.dz).astype(int) # index with origin z = 0.0 --> 0
-
         z = np.linspace(-1.0, 1.0, round(2.0/self.dz)+1, dtype=float)
         self.kernel = π/12.0*(1-z)**3*(1+3*z)
         self.kernel[z<0] = np.flip(self.kernel[z>0])
@@ -104,8 +103,7 @@ class Wall:
         for i in range(max_iters):
             uself = dz * np.convolve(Δρ, ukernel, mode='same')
             Δρ_new = rhob * (expneguwall*np.exp(-uself) - 1.0)
-            h0 = np.max(np.abs(Δρ))
-            h1 = np.max(np.abs(Δρ_new))
+            h0, h1 = [np.max(np.abs(a)) for a in [Δρ, Δρ_new]]
             α = alpha * h0 / h1
             Δρ_new = (1-α)*Δρ + α*Δρ_new # mixing rule
             ΔΔρ = Δρ - Δρ_new
