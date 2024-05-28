@@ -49,6 +49,13 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
     def parse_args(self, *args, **kwargs):
         return self.parser.parse_args(*args, **kwargs)
 
+# utility function
+    
+def truncate_to_zero(a, z):
+    b = a.copy()
+    b[z < 0] = 0.0
+    return b
+
 class Wall:
 
     # Define the kernel U(z) on the domain -1 < z < 1.  The function is
@@ -86,22 +93,17 @@ class Wall:
         self.uwall[z>1] = 0.0
         self.model = f'continuum wall: Awall*rhob = {Awall_rhob}'
 
-    def truncate_to(self, a, v):
-        b = a.copy()
-        b[self.z < 0] = v
-        return b
-
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10):
         z, dz, domain = self.z, self.dz, self.domain
         ukernel, uwall = (Abulk * self.kernel), self.uwall
-        Δρ = self.truncate_to(rhob*(np.exp(-uwall) - 1), -rhob) # initial guess
+        expneguwall = truncate_to_zero(np.exp(-uwall), z)
+        Δρ = rhob * (expneguwall - 1) # initial guess
         # Iterate to solve Δρ = ρb [exp(-Uext-Uself) - 1] where
         # Uself = ∫ dz' Δρ(z') U(z'−z).  Use convolution from
         # numpy to evaluate this integral.
         for i in range(max_iters):
             uself = dz * np.convolve(Δρ, ukernel, mode='same')
-            Δρ_new = rhob * (np.exp(-uwall-uself) - 1)
-            Δρ_new[z<0] = -rhob # always inside the hard wall barrier
+            Δρ_new = rhob * (expneguwall*np.exp(-uself) - 1.0)
             h0 = np.max(np.abs(Δρ))
             h1 = np.max(np.abs(Δρ_new))
             α = alpha * h0 / h1
@@ -117,7 +119,7 @@ class Wall:
         return i, int_abs_ΔΔρ # for monitoring
 
     def density_profile(self):
-        return self.truncate_to(self.ρb + self.Δρ, 0)
+        return truncate_to_zero(self.ρb + self.Δρ, self.z)
 
     # The surface excess Γ/A = ∫ dz Δρ(z), where the integration
     # limits are 0 to ∞.  The absolute deviation is defined similarly
@@ -151,7 +153,7 @@ class Wall:
     def wall_tension(self):
         z, dz, domain = self.z, self.dz, self.domain
         ukernel, Δρ = (self.Abulk * self.kernel), self.Δρ
-        ρ = self.truncate_to(self.ρb + Δρ, 0)
+        ρ = truncate_to_zero(self.ρb + Δρ, z)
         ρρU = ρ * dz * np.convolve(ρ, ukernel, mode='same')
         ΩexbyA = - np.trapz(Δρ[domain], dx=dz) - 0.5 * np.trapz(ρρU[domain], dx=dz) # omitting Lz*ρb
         ωbex = - 0.5 * self.ρb**2 * np.trapz(ukernel, dx=dz) # same as np.conv, omitting Lz*ρb
