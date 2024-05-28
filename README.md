@@ -1,10 +1,15 @@
 ## Density functional theory for walls in dissipative particle dynamics
 
+### Summary
+
 This code computes the density profile, surface excess, and wall
 tension, for a fluid of pure dissipative particle dynamics (DPD)
 beads against a wall, using a mean-field density functional theory (DFT).
 
 More details to follow...
+
+### What's being solved here?
+
 
 ### Copying
 
