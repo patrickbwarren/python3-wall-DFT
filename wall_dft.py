@@ -72,8 +72,8 @@ class Wall:
         self.not_inside_wall = ~(self.z < 0) # binary array
         self.not_above_zmax_minus_one = ~(self.z > self.zmax - 1.0) # ditto
         self.domain = self.not_inside_wall & self.not_above_zmax_minus_one # ditto
-        self.idx = np.round(self.z/self.dz).astype(int) # index with origin z = 0.0 → 0
-        self.ρ = np.zeros_like(self.z)
+        self.idx = np.round(self.z/self.dz).astype(int) # index with origin z = 0.0 --> 0
+
         z = np.linspace(-1.0, 1.0, round(2.0/self.dz)+1, dtype=float)
         self.kernel = π/12.0*(1-z)**3*(1+3*z)
         self.kernel[z<0] = np.flip(self.kernel[z>0])
