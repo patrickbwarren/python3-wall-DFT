@@ -49,14 +49,14 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
     def parse_args(self, *args, **kwargs):
         return self.parser.parse_args(*args, **kwargs)
 
-# Define the kernel U(z) on the domain -1 < z < 1.  The function is
-# π/12 (1−z)³(1+3z) for 0 < z < 1 and U(-z) = U(z) for -1 < z < 0.
-# The domain here includes the ends, ie z ∈ [-1, 1].  This means that
-# np.trapz is equivalent to np.conv since the endpoints are zero.  We
-# omit the 'A' factor, and restore it when solving for a density
-# profile.
-
 class Wall:
+
+    # Define the kernel U(z) on the domain -1 < z < 1.  The function is
+    # π/12 (1−z)³(1+3z) for 0 < z < 1 and U(-z) = U(z) for -1 < z < 0.
+    # The domain here includes the ends, ie z ∈ [-1, 1].  This means that
+    # np.trapz is equivalent to np.conv since the endpoints are zero.  We
+    # omit the 'A' factor, and restore it when solving for a density
+    # profile.
 
     def __init__(self, dz=1e-3, zmax=11.0):
         self.dz = dz
@@ -74,29 +74,27 @@ class Wall:
 
     def standard_wall(self, Awall):
         z = self.z
-        uwall = 0.5*Awall*(1-z)**2
-        uwall[z<0] = 0.5*Awall # continuity for z < 0 (though irrelevant)
-        uwall[z>1] = 0.0
+        self.uwall = 0.5*Awall*(1-z)**2
+        self.uwall[z<0] = 0.5*Awall # continuity for z < 0 (though irrelevant)
+        self.uwall[z>1] = 0.0
         self.model = f'standard wall: Awall = {Awall}'
-        self.uwall = uwall
 
     def continuum_wall(self, Awall_rhob):
         z = self.z
-        uwall = π*Awall_rhob/60.0*(1-z)**4*(2+3*z)
-        uwall[z<0] = π*Awall_rhob/30.0 # continuity for z < 0 (though irrelevant)
-        uwall[z>1] = 0.0
-        self.model = f'continuum wall: Awall* rhob = {Awall_rhob}'
-        self.uwall = uwall
+        self.uwall = π*Awall_rhob/60.0*(1-z)**4*(2+3*z)
+        self.uwall[z<0] = π*Awall_rhob/30.0 # continuity for z < 0 (though irrelevant)
+        self.uwall[z>1] = 0.0
+        self.model = f'continuum wall: Awall*rhob = {Awall_rhob}'
+
+    def truncate_to(self, a, v):
+        b = a.copy()
+        b[self.z < 0] = v
+        return b
 
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10):
-        z = self.z
-        domain = self.domain
-        ukernel = Abulk * self.kernel
-        uwall = self.uwall
-        dz = self.dz
-        self.curlyell = np.trapz((np.exp(-uwall[domain]) - 1), dx=dz)
-        Δρ = rhob*(np.exp(-uwall) - 1) # Initial guess
-        Δρ[z<0] = -rhob
+        z, dz, domain = self.z, self.dz, self.domain
+        ukernel, uwall = (Abulk * self.kernel), self.uwall
+        Δρ = self.truncate_to(rhob*(np.exp(-uwall) - 1), -rhob) # initial guess
         # Iterate to solve Δρ = ρb [exp(-Uext-Uself) - 1] where
         # Uself = ∫ dz' Δρ(z') U(z'−z).  Use convolution from
         # numpy to evaluate this integral.
@@ -114,14 +112,12 @@ class Wall:
                 break
             Δρ = Δρ_new
         self.Δρ = Δρ # The density profile (should vanish inside the wall)
-        self.ρb = rhob
-        self.Abulk = Abulk
+        self.ρb = rhob # For use with surface tension calculation
+        self.Abulk = Abulk # -- ditto --
         return i, int_abs_ΔΔρ # for monitoring
 
     def density_profile(self):
-        ρ = self.ρb + self.Δρ
-        ρ[self.z<0] = 0
-        return ρ
+        return self.truncate_to(self.ρb + self.Δρ, 0)
 
     # The surface excess Γ/A = ∫ dz Δρ(z), where the integration
     # limits are 0 to ∞.  The absolute deviation is defined similarly
@@ -153,13 +149,9 @@ class Wall:
     # 2.94524.
 
     def wall_tension(self):
-        z = self.z
-        domain = self.domain
-        ukernel = self.Abulk * self.kernel
-        dz = self.dz
-        Δρ = self.Δρ
-        ρ = self.ρb + Δρ
-        ρ[z<0] = 0
+        z, dz, domain = self.z, self.dz, self.domain
+        ukernel, Δρ = (self.Abulk * self.kernel), self.Δρ
+        ρ = self.truncate_to(self.ρb + Δρ, 0)
         ρρU = ρ * dz * np.convolve(ρ, ukernel, mode='same')
         ΩexbyA = - np.trapz(Δρ[domain], dx=dz) - 0.5 * np.trapz(ρρU[domain], dx=dz) # omitting Lz*ρb
         ωbex = - 0.5 * self.ρb**2 * np.trapz(ukernel, dx=dz) # same as np.conv, omitting Lz*ρb

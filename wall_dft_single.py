@@ -39,9 +39,11 @@ wall = wall_dft.Wall(dz=args.dz, zmax=args.zmax)
 
 print(wall.about)
 
-rhob = eval(args.rhob)
-Abulk = eval(args.Abulk)
 Awall = eval(args.Awall)
+Abulk = eval(args.Abulk)
+rhob = eval(args.rhob)
+
+print('Awall, Abulk, rhob = ', Awall, Abulk, rhob)
 
 wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
 print(wall.model)
