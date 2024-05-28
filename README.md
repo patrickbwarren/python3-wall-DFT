@@ -2,7 +2,7 @@
 
 This code computes the density profile, surface excess, and wall
 tension, for a fluid of pure dissipative particle dynamics (DPD)
-beads, with a mean-field density functional theory (DFT).
+beads against a wall, using a mean-field density functional theory (DFT).
 
 More details to follow...
 
