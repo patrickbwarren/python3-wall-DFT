@@ -35,26 +35,38 @@ args = eparser.parse_args()
 
 max_iters = eval(args.max_iters.replace('^', '**'))
 
-Alo, Ahi, Astep = eval(args.Awall)
+Alo, Ahi, Astep = eval(f'({args.Awall})')
 Awalls = np.linspace(Alo, Ahi, round((Ahi-Alo)/Astep)+1, dtype=float)
 
 wall = wall_dft.Wall(dz=args.dz, zmax=args.zmax)
+
 print(wall.about)
 
-wall.rhob = eval(args.rhob)
-wall.Abulk = eval(args.Abulk)
-wall.model = 'half space' if args.half_space else 'vanilla'
+rhob = eval(args.rhob)
+Abulk = eval(args.Abulk)
 
-df = pd.DataFrame(columns=['Awall', 'surface_excess', 'gamma', 'wobble'], dtype='float') # initially empty
+results = []
+for i, Awall in enumerate(Awalls):
+    wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
+    iters, convergence = wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
+    Γ = wall.surface_excess()
+    w = wall.abs_deviation()
+    γ, _, _ = wall.wall_tension()
+    results.append((Awall, Γ, γ, w))
 
-for i, wall.Awall in enumerate(Awalls):
-    wall.solve(max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
-    df.loc[i] = (wall.Awall, wall.surface_excess, wall.gamma, wall.wobble)
+df = pd.DataFrame(results, columns=['Awall', 'Gamma', 'gamma', 'abs_dev'])
 
 df['mN.m'] = df['gamma'] * args.conversion_factor # column for surface tension in physical units
 
 if args.output:
-    df.to_csv(args.output, sep='\t', header=False, index=False, float_format='%g')
-    print(', '.join([f'{s}({i+1})' for i, s in enumerate(df.columns)]), 'written to', args.output)
+    column_heads = [f'{col}({i+1})' for i, col in enumerate(df.columns)]
+    header_row = '#  ' + '  '.join(column_heads)
+    data_rows = df.to_string(index=False).split('\n')[1:]
+    with open(args.output, 'w') as f:
+        print('\n'.join([header_row] + data_rows), file=f)
+    print('Data:', ', '.join(column_heads), 'written to', args.output)
 else:
     print(df.set_index('Awall'))
+
+    # Write in format suitable for import into xmgrace as NXY data
+
