@@ -23,18 +23,19 @@
 
 import wall_dft
 from numpy import pi as π
-from scipy.optimize import root_scalar as find_zero
+from scipy.optimize import minimize_scalar as find_min
 
-eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile zero calculator')
-eparser.awall.default = '0,40'
+eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile minimum calculator')
+eparser.awall.default = '1,5'
 eparser.awall.help='wall repulsion amplitude bracket, default ' + eparser.awall.default
+eparser.add_argument('--bounds', default='0,40', help='search bounds, default 0,40')
 eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
-eparser.add_argument('-g', '--gamma', action='store_true', help='search for zero surface tension, rather than surface excess')
 args = eparser.parse_args()
 
 max_iters = eval(args.max_iters.replace('^', '**'))
 
 Alo, Ahi = eval(args.Awall)
+Blo, Bhi = eval(args.bounds)
 rhob = eval(args.rhob)
 Abulk = eval(args.Abulk)
 
@@ -51,19 +52,21 @@ def func(Awall):
     γ, _, _ = wall.wall_tension()
     if args.verbose > 1:
         print('%g\t%g\t%g\t%g\t%g\t%i' % (Awall, Γ, γ, w, conv, iters))
-    return γ if args.gamma else Γ
+    return w
 
-sol = find_zero(func, bracket=(Alo, Ahi), method='brentq')
+sol = find_min(func, bracket=(Alo, Ahi), bounds=(Blo, Bhi))
 
-print('Solution for vanishing surface', 'tension' if args.gamma else 'excess')
+print('Solution for minimising abs dev')
 
 if args.verbose:
-    print('     converged:', sol.converged)
-    print('function_calls:', sol.function_calls)
-    print('    iterations:', sol.iterations)
-    print('          root:', sol.root)
+    print(sol.message)
+    print('success:', sol.success)
+    print('    fun:', sol.fun)
+    print('   nfev:', sol.nfev)
+    print('    nit:', sol.nit)
+    print('      x:', sol.x)
 
-Awall = sol.root
+Awall = sol.x
 
 wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
 print(wall.model)

@@ -28,13 +28,13 @@ import pandas as pd
 eparser = wall_dft.ExtendedArgumentParser(description='DFT wall property table calculator')
 eparser.awall.default = '0,40,5'
 eparser.awall.help='wall repulsion amplitudes, default ' + eparser.awall.default
-eparser.add_argument('--conversion-factor', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
+eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
 eparser.add_argument('-o', '--output', help='output data to, eg, .dat')
 args = eparser.parse_args()
 
 max_iters = eval(args.max_iters.replace('^', '**'))
 
-Alo, Ahi, Astep = eval(f'({args.Awall})')
+Alo, Ahi, Astep = eval(args.Awall) # returns a tuple
 Awalls = np.linspace(Alo, Ahi, round((Ahi-Alo)/Astep)+1, dtype=float)
 
 wall = wall_dft.Wall(dz=args.dz, zmax=args.zmax)
@@ -63,7 +63,7 @@ df = pd.DataFrame(results, columns=schema.keys()).astype(schema)
 
 # column for surface tension in physical units
 icol = df.columns.get_loc('gamma') + 1
-df.insert(icol, 'mN.m', df['gamma'] * args.conversion_factor)
+df.insert(icol, 'mN.m', df['gamma'] * args.ktbyrc2)
 
 if args.output:
     df.drop(['conv', 'iters'], axis=1, inplace=True)

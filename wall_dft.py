@@ -84,18 +84,18 @@ class Wall:
         self.uwall = 0.5*Awall*(1-z)**2
         self.uwall[z<0] = 0.5*Awall # continuity for z < 0 (though irrelevant)
         self.uwall[z>1] = 0.0
-        self.model = f'standard wall: Awall = {Awall}'
+        self.model = f'Standard wall: Awall = {Awall}'
 
     def continuum_wall(self, Awall_rhob):
         z = self.z
         self.uwall = π*Awall_rhob/60.0*(1-z)**4*(2+3*z)
         self.uwall[z<0] = π*Awall_rhob/30.0 # continuity for z < 0 (though irrelevant)
         self.uwall[z>1] = 0.0
-        self.model = f'continuum wall: Awall*rhob = {Awall_rhob}'
+        self.model = f'Continuum wall: Awall*rhob = {Awall_rhob}'
 
     def curly_ell(self): # available after the wall potential is set
-        boltz_fact = truncate_to_zero(np.exp(-self.uwall), self.z) - 1.0
-        return np.trapz(boltz_fact[self.domain], dx=self.dz)
+        boltz_fact_minus_1 = truncate_to_zero(np.exp(-self.uwall), self.z) - 1.0
+        return np.trapz(boltz_fact_minus_1[self.domain], dx=self.dz)
 
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10, eps=1e-10):
         z, dz, domain = self.z, self.dz, self.domain
@@ -147,11 +147,6 @@ class Wall:
     # the calculation below the contribution Lz*ρb is omitted from
     # both the terms since it cancels in the expression for the
     # surface tension.
-        
-    # For a matched continuum wall potential ρ(z) = ρb for z > 0, so
-    # that the surface excess vanishes.  However γ = π A ρb²/240 ; for
-    # the standard water model (A = 25, ρb = 3), this is γ = 15π/16 ≈
-    # 2.94524.
 
     def wall_tension(self):
         z, dz, domain = self.z, self.dz, self.domain

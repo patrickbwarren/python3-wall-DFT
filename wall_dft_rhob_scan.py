@@ -29,13 +29,13 @@ eparser = wall_dft.ExtendedArgumentParser(description='DFT wall property table c
 eparser.rhob.default = '0,3.5,0.5'
 eparser.rhob.help='bulk densities, default ' + eparser.rhob.default
 eparser.add_argument('--rbase', default=3.0, type=float, help='baseline bulk density, default 3.0')
-eparser.add_argument('--conversion-factor', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
+eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
 eparser.add_argument('-o', '--output', default=None, help='output data to, eg, .dat')
 args = eparser.parse_args()
 
 max_iters = eval(args.max_iters.replace('^', '**'))
 
-rholo, rhohi, rhostep = eval(f'({args.rhob})')
+rholo, rhohi, rhostep = eval(args.rhob) # returns a tuple
 rhobs = np.linspace(rholo, rhohi, round((rhohi-rholo)/rhostep)+1, dtype=float)
 
 wall = wall_dft.Wall(dz=args.dz, zmax=args.zmax)
@@ -69,7 +69,9 @@ schema = {'rhob':float, 'Gamma/rhob':float, 'gamma':float,
           'abs_dev':float, 'conv':float, 'iters':int}
 df = pd.DataFrame(results, columns=schema.keys()).astype(schema)
 
-# df['mN.m'] = df['gamma'] * args.conversion_factor # column for surface tension in physical units
+# column for surface tension in physical units
+icol = df.columns.get_loc('gamma') + 1
+df.insert(icol, 'mN.m', df['gamma'] * args.ktbyrc2)
 
 if args.output:
     df.drop(['conv', 'iters'], axis=1, inplace=True)

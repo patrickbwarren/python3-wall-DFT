@@ -21,14 +21,17 @@
 # along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+# For a matched (Awall = Abulk) continuum wall, ρ(z) = ρb for z > 0,
+# so that the surface excess vanishes.  However γ = π A ρb²/240 ; for
+# standard water (A = 25, ρb = 3), this is γ = 15π/16 ≈ 2.94524.
+
 import wall_dft
 from numpy import pi as π
 
 eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile one off calculator')
 eparser.add_argument('--zcut', default=4.0, type=float, help='cut-off in z, default 4.0')
 eparser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
-eparser.add_argument('--vanilla', action='store_true', help='use vanilla wall model')
-eparser.add_argument('--conversion-factor', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
+eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
 eparser.add_argument('-s', '--show', action='store_true', help='plot the density profile')
 eparser.add_argument('-o', '--output', help='output plot to, eg, pdf')
 args = eparser.parse_args()
@@ -48,7 +51,7 @@ print('Awall, Abulk, rhob = ', Awall, Abulk, rhob)
 wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
 print(wall.model)
 
-iters, convergence = wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
+iters, conv = wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
 
 ρ = wall.density_profile()
 Γ = wall.surface_excess()
@@ -56,8 +59,8 @@ w = wall.abs_deviation()
 γ, ωb, Lz = wall.wall_tension()
 p_mf = rhob + π/30 * Abulk * rhob**2
 
-print('Converged after %i iterations, ∫dz|ΔΔρ| = %g' % (iters, convergence))
-print('Abulk, ρb = %g, %g' % (Abulk, rhob))
+print('Converged after %i iterations, ∫dz|ΔΔρ| = %g' % (iters, conv))
+print('Awall, Abulk, ρb = %g, %g, %g' % (Awall, Abulk, rhob))
 print('Surface excess per unit area Γ/A = %g' % Γ)
 print('Bulk grand potential ωb = %g' % ωb)
 print('Bulk mean field pressure, p = %g' % p_mf)
@@ -65,7 +68,7 @@ print('Domain size Lz = %g' % Lz)
 print('Surface tension γ = %g ' % γ)
 print('Abs deviation = %g' % w)
 
-print('Surface tension γ = %g mN.m' % (γ * args.conversion_factor))
+print('Surface tension γ = %g mN.m' % (γ * args.ktbyrc2))
 
 if args.output:
 
