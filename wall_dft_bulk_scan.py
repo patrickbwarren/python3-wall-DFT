@@ -4,7 +4,7 @@
 # Code to calculate surface density profiles, surface excess, and
 # surface tension, for DPD wall models with a simple DPD fluid.
 
-# This code is part of DPDWall-DFT, copyright (c) 2024 Patrick B Warren (STFC).
+# This code is copyright (c) 2024 Patrick B Warren (STFC).
 # Email: patrick.warren{at}stfc.ac.uk.
 
 # This program is free software: you can redistribute it and/or modify
