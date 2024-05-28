@@ -31,8 +31,8 @@ from numpy import pi as π
 
 class ExtendedArgumentParser(argparse.ArgumentParser):
 
-    def __init__(self, **kwargs):
-        self.parser = argparse.ArgumentParser(**kwargs)
+    def __init__(self, *args, **kwargs):
+        self.parser = argparse.ArgumentParser(*args, **kwargs)
         self.parser.add_argument('--max-iters', default='10^3', help='max number of iterations, default 10^3')
         self.parser.add_argument('--tolerance', default='1e-10', type=float, help='convergence tol, default 1e-10')
         self.parser.add_argument('--alpha', default=0.1, type=float, help='mixing fraction, default 0.1')
@@ -49,11 +49,12 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
     def parse_args(self, *args, **kwargs):
         return self.parser.parse_args(*args, **kwargs)
 
-
 # Define the kernel U(z) on the domain -1 < z < 1.  The function is
-# πA/12 (1−z)³(1+3z) for 0 < z < 1 and U(-z) = U(z) for -1 < z < 0.
+# π/12 (1−z)³(1+3z) for 0 < z < 1 and U(-z) = U(z) for -1 < z < 0.
 # The domain here includes the ends, ie z ∈ [-1, 1].  This means that
-# np.trapz is equivalent to np.conv since the endpoints are zero.
+# np.trapz is equivalent to np.conv since the endpoints are zero.  We
+# omit the 'A' factor, and restore it when solving for a density
+# profile.
 
 class Wall:
 
@@ -66,45 +67,42 @@ class Wall:
         self.domain = self.not_inside_wall & self.not_above_zmax_minus_one # ditto
         self.idx = np.round(self.z/self.dz).astype(int) # index with origin z = 0.0 → 0
         self.ρ = np.zeros_like(self.z)
+        z = np.linspace(-1.0, 1.0, round(2.0/self.dz)+1, dtype=float)
+        self.kernel = π/12.0*(1-z)**3*(1+3*z)
+        self.kernel[z<0] = np.flip(self.kernel[z>0])
         self.about = 'Wall: zmax, dz, nz = %g, %g, %i' % (self.zmax, self.dz, len(self.z))
 
     def standard_wall(self, Awall):
         z = self.z
-        self.uwall = 0.5*Awall*(1-z)**2
-        self.uwall[z<0] = 0.5*Awall # continuity for z < 0 (though irrelevant)
-        self.uwall[z>1] = 0.0
+        uwall = 0.5*Awall*(1-z)**2
+        uwall[z<0] = 0.5*Awall # continuity for z < 0 (though irrelevant)
+        uwall[z>1] = 0.0
         self.model = f'standard wall: Awall = {Awall}'
+        self.uwall = uwall
 
     def continuum_wall(self, Awall_rhob):
         z = self.z
-        self.uwall = π*Awall_rhob/60.0*(1-z)**4*(2+3*z)
-        self.uwall[z<0] = π*Awall_rhob/30.0 # continuity for z < 0 (though irrelevant)
-        self.uwall[z>1] = 0.0
+        uwall = π*Awall_rhob/60.0*(1-z)**4*(2+3*z)
+        uwall[z<0] = π*Awall_rhob/30.0 # continuity for z < 0 (though irrelevant)
+        uwall[z>1] = 0.0
         self.model = f'continuum wall: Awall* rhob = {Awall_rhob}'
-
-    def make_kernel(self, Abulk):
-        z = np.linspace(-1.0, 1.0, round(2.0/self.dz)+1, dtype=float)
-        self.ukernel = π*Abulk/12.0*(1-z)**3*(1+3*z)
-        self.ukernel[z<0] = np.flip(self.ukernel[z>0])
-        self.kernel = f'kernel: Abulk = {Abulk}'
+        self.uwall = uwall
 
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10):
         z = self.z
         domain = self.domain
-        ukernel = self.ukernel
+        ukernel = Abulk * self.kernel
         uwall = self.uwall
         dz = self.dz
-        self.curlyell = np.trapz(np.exp(-uwall[domain])-1, dx=dz)
-        Δρ = rhob*(np.exp(-uwall) - 1.0) # Initial guess
+        self.curlyell = np.trapz((np.exp(-uwall[domain]) - 1), dx=dz)
+        Δρ = rhob*(np.exp(-uwall) - 1) # Initial guess
         Δρ[z<0] = -rhob
-
         # Iterate to solve Δρ = ρb [exp(-Uext-Uself) - 1] where
         # Uself = ∫ dz' Δρ(z') U(z'−z).  Use convolution from
         # numpy to evaluate this integral.
-        
         for i in range(max_iters):
             uself = dz * np.convolve(Δρ, ukernel, mode='same')
-            Δρ_new = rhob * (np.exp(-uwall-uself) - 1.0)
+            Δρ_new = rhob * (np.exp(-uwall-uself) - 1)
             Δρ_new[z<0] = -rhob # always inside the hard wall barrier
             h0 = np.max(np.abs(Δρ))
             h1 = np.max(np.abs(Δρ_new))
@@ -115,31 +113,25 @@ class Wall:
             if int_abs_ΔΔρ < tol: # early escape if converged
                 break
             Δρ = Δρ_new
+        self.Δρ = Δρ # The density profile (should vanish inside the wall)
+        self.ρb = rhob
+        self.Abulk = Abulk
+        return i, int_abs_ΔΔρ # for monitoring
 
-        self.iters = i # for monitoring
-        self.convergence = int_abs_ΔΔρ # for monitoring
+    def density_profile(self):
+        ρ = self.ρb + self.Δρ
+        ρ[self.z<0] = 0
+        return ρ
 
-        # The density profile (vanishes inside the wall)
-
-        self.Δρ = Δρ
-        self.ρ = rhob + Δρ
-        self.ρ[z<0] = 0.0
-
-        
     # The surface excess Γ/A = ∫ dz Δρ(z), where the integration
-    # limits are 0 to ∞.  The wobbliness is defined similarly as
-    # ∫ dz |Δρ(z)| where the integration limits are 1 to ∞.
+    # limits are 0 to ∞.  The absolute deviation is defined similarly
+    # as ∫ dz |Δρ(z)| where the integration limits are 1 to ∞.
 
     def surface_excess(self):
-        domain = self.domain
-        dz = self.dz
-        return np.trapz(self.Δρ[domain], dx=dz)
+        return np.trapz(self.Δρ[self.domain], dx=self.dz)
 
-    def mean_deviation(self):
-        z = self.z
-        domain = self.domain
-        dz = self.dz
-        return np.trapz(np.abs(Δρ[domain & ~(z<1)]), dx=dz)
+    def abs_deviation(self):
+        return np.trapz(np.abs(self.Δρ[self.domain & ~(self.z<1)]), dx=self.dz)
 
     # Calculate the surface tension by first calculating the grand
     # potential per unit area with a certain domain height Lz.
@@ -155,35 +147,24 @@ class Wall:
     # both the terms since it cancels in the expression for the
     # surface tension.
         
-    # For a neutral wall potential ρ(z) = ρb for z > 0, so that
-    # the surface excess vanishes.  However γ = π A ρb²/240 ; for
-    # the standard water model (A = 25, ρb = 3), this is γ =
-    # 15π/16 ≈ 2.94524.
+    # For a matched continuum wall potential ρ(z) = ρb for z > 0, so
+    # that the surface excess vanishes.  However γ = π A ρb²/240 ; for
+    # the standard water model (A = 25, ρb = 3), this is γ = 15π/16 ≈
+    # 2.94524.
 
     def wall_tension(self):
         z = self.z
         domain = self.domain
-        ukernel = self.ukernel
+        ukernel = self.Abulk * self.kernel
         dz = self.dz
-        ρ = self.ρ
-        np.trapz(self.Δρ[domain], dx=dz)
+        Δρ = self.Δρ
+        ρ = self.ρb + Δρ
+        ρ[z<0] = 0
         ρρU = ρ * dz * np.convolve(ρ, ukernel, mode='same')
-        ΩexbyA = - self.surface_excess - 0.5 * np.trapz(ρρU[domain], dx=dz) # omitting Lz*ρb
-        ωbex = - 0.5 * rhob**2 * np.trapz(ukernel, dx=dz) # same as np.conv, omitting Lz*ρb
-        self.ωb = self.ωbex - rhob # restoring the bulk piece
+        ΩexbyA = - np.trapz(Δρ[domain], dx=dz) - 0.5 * np.trapz(ρρU[domain], dx=dz) # omitting Lz*ρb
+        ωbex = - 0.5 * self.ρb**2 * np.trapz(ukernel, dx=dz) # same as np.conv, omitting Lz*ρb
+        ωb = ωbex - self.ρb # restoring the bulk piece
         # Lz = np.trapz(np.ones_like(z[domain]), dx=dz) 
-        self.Lz = z[domain][-1] - z[domain][0] # equivalent to above
-        self.gamma = self.ΩexbyA - self.Lz*self.ωbex
-
-        self.p_mf = rhob + π/30 * Abulk * rhob**2
-
-        self.properties = '\n'.join(['Converged after %i iterations, ∫dz|ΔΔρ| = %g' %
-                                     (self.iters, self.convergence),
-                                     'Abulk, ρb = %g, %g' % (Abulk, rhob),
-                                     'Surface excess per unit area Γ/A = %g' % self.surface_excess,
-                                     'Bulk grand potential ωb = %g' % self.ωb,
-                                     'Bulk mean field pressure, p = %g' % self.p_mf,
-                                     'Domain size Lz = %g' % self.Lz,
-                                     'Surface tension γ = %g ' % self.gamma,
-                                     'Wobbliness = %g' % self.wobble])
-
+        Lz = z[domain][-1] - z[domain][0] # equivalent to above
+        γ = ΩexbyA - Lz*ωbex
+        return γ, ωb, Lz

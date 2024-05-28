@@ -22,6 +22,7 @@
 # <http://www.gnu.org/licenses/>.
 
 import wall_dft
+from numpy import pi as π
 
 eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile one off calculator')
 eparser.add_argument('--zcut', default=4.0, type=float, help='cut-off in z, default 4.0')
@@ -45,13 +46,24 @@ Awall = eval(args.Awall)
 wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
 print(wall.model)
 
-wall.make_kernel(Abulk)
-print(wall.kernel)
+iters, convergence = wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
 
-wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
+ρ = wall.density_profile()
+Γ = wall.surface_excess()
+w = wall.abs_deviation()
+γ, ωb, Lz = wall.wall_tension()
+p_mf = rhob + π/30 * Abulk * rhob**2
 
-print(wall.properties)
-print('Surface tension γ = %g mN.m' % (wall.gamma * args.conversion_factor))
+print('Converged after %i iterations, ∫dz|ΔΔρ| = %g' % (iters, convergence))
+print('Abulk, ρb = %g, %g' % (Abulk, rhob))
+print('Surface excess per unit area Γ/A = %g' % Γ)
+print('Bulk grand potential ωb = %g' % ωb)
+print('Bulk mean field pressure, p = %g' % p_mf)
+print('Domain size Lz = %g' % Lz)
+print('Surface tension γ = %g ' % γ)
+print('Abs deviation = %g' % w)
+
+print('Surface tension γ = %g mN.m' % (γ * args.conversion_factor))
 
 if args.output:
 
@@ -64,7 +76,7 @@ if args.output:
     filtered = (np.mod(wall.idx, round(args.gridz/wall.dz)) == 0) # binary array
     plot_region = ~(wall.z < 0) & ~(wall.z > args.zcut) # another binary array
     grid = plot_region & filtered # values to write out
-    df = pd.DataFrame(np.array([wall.z[grid], wall.ρ[grid], wall.uwall[grid]]).transpose(),
+    df = pd.DataFrame(np.array([wall.z[grid], ρ[grid], wall.uwall[grid]]).transpose(),
                       columns=['z', 'ρ', 'uwall'])
     df.to_csv(args.output, sep='\t', header=False, index=False, float_format='%g')
     print(', '.join([f'{s}({i+1})' for i, s in enumerate(df.columns)]), 'written to', args.output)
@@ -75,6 +87,6 @@ elif args.show:
 
     plot_region = ~(wall.z > args.zcut) # another binary array
 
-    plt.plot(wall.z[plot_region], wall.ρ[plot_region])
+    plt.plot(wall.z[plot_region], ρ[plot_region])
     plt.plot(wall.z[plot_region], wall.uwall[plot_region])
     plt.show()
