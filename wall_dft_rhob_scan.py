@@ -26,44 +26,50 @@ import numpy as np
 import pandas as pd
 
 eparser = wall_dft.ExtendedArgumentParser(description='DFT wall property table calculator')
-eparser.awall.default = '0,40,5'
-eparser.awall.help='wall repulsion amplitudes, default ' + eparser.awall.default
+eparser.rhob.default = '0,3.5,0.5'
+eparser.rhob.help='bulk densities, default ' + eparser.rhob.default
+eparser.add_argument('--rbase', default=3.0, type=float, help='baseline bulk density, default 3.0')
 eparser.add_argument('--conversion-factor', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
-eparser.add_argument('-o', '--output', help='output data to, eg, .dat')
+eparser.add_argument('-o', '--output', default=None, help='output data to, eg, .dat')
 args = eparser.parse_args()
 
 max_iters = eval(args.max_iters.replace('^', '**'))
 
-Alo, Ahi, Astep = eval(f'({args.Awall})')
-Awalls = np.linspace(Alo, Ahi, round((Ahi-Alo)/Astep)+1, dtype=float)
+rholo, rhohi, rhostep = eval(f'({args.rhob})')
+rhobs = np.linspace(rholo, rhohi, round((rhohi-rholo)/rhostep)+1, dtype=float)
 
 wall = wall_dft.Wall(dz=args.dz, zmax=args.zmax)
 if args.verbose:
     print(wall.about)
 
-rhob = eval(args.rhob)
+Awall = eval(args.Awall)
 Abulk = eval(args.Abulk)
+rhob_base = args.rbase
 
-results = []
+wall.continuum_wall(Awall*rhob_base) if args.continuum else wall.standard_wall(Awall)
+if args.verbose:
+    print(wall.model)
 
-for Awall in Awalls:
-    wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
+result = (0.0, wall.curly_ell(), 0.0, 0.0, 0.0, 0)
+if args.verbose > 1:
+    print('%g\t%g\t%g\t%g\t%g\t%i' % result)
+results = [result] # zero density result
+
+for rhob in rhobs[1:]: # omit zero density
     iters, conv = wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
     Γ = wall.surface_excess()
     w = wall.abs_deviation()
     γ, _, _ = wall.wall_tension()
-    result = (Awall, Γ, γ, w, conv, iters)
+    result = (rhob, Γ/rhob, γ, w, conv, iters)
     if args.verbose > 1:
         print('%g\t%g\t%g\t%g\t%g\t%i' % result)
     results.append(result)
 
-schema = {'Awall':float, 'Gamma':float, 'gamma':float,
+schema = {'rhob':float, 'Gamma/rhob':float, 'gamma':float,
           'abs_dev':float, 'conv':float, 'iters':int}
 df = pd.DataFrame(results, columns=schema.keys()).astype(schema)
 
-# column for surface tension in physical units
-icol = df.columns.get_loc('gamma') + 1
-df.insert(icol, 'mN.m', df['gamma'] * args.conversion_factor)
+# df['mN.m'] = df['gamma'] * args.conversion_factor # column for surface tension in physical units
 
 if args.output:
     df.drop(['conv', 'iters'], axis=1, inplace=True)
@@ -74,5 +80,5 @@ if args.output:
         print('\n'.join([header_row] + data_rows), file=f)
     print('Data:', ', '.join(column_heads), 'written to', args.output)
 else:
-    print(df.set_index('Awall'))
+    print(df.set_index('rhob'))
 

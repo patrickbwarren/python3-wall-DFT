@@ -38,10 +38,11 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
         self.parser.add_argument('--alpha', default=0.1, type=float, help='mixing fraction, default 0.1')
         self.parser.add_argument('--zmax', default=11.0, type=float, help='maximum distance in z, default 10.0')
         self.parser.add_argument('--dz', default=1e-3, type=float, help='spacing in z, default 1e-3')
-        self.rbulk = self.parser.add_argument('--rhob', default='3.0', help='bulk density, default 3.0')
+        self.rhob = self.parser.add_argument('--rhob', default='3.0', help='bulk density, default 3.0')
         self.abulk = self.parser.add_argument('--Abulk', default='25', help='bulk repulsion amplitude, default 25')
         self.awall = self.parser.add_argument('--Awall', default='10', help='wall repulsion amplitude, default 10')
         self.parser.add_argument('-c', '--continuum', action='store_true', help='if set use a continuum half-space wall model')
+        self.parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 
     def add_argument(self, *args, **kwargs):
         return self.parser.add_argument(*args, **kwargs)
@@ -92,7 +93,11 @@ class Wall:
         self.uwall[z>1] = 0.0
         self.model = f'continuum wall: Awall*rhob = {Awall_rhob}'
 
-    def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10):
+    def curly_ell(self): # available after the wall potential is set
+        boltz_fact = truncate_to_zero(np.exp(-self.uwall), self.z) - 1.0
+        return np.trapz(boltz_fact[self.domain], dx=self.dz)
+
+    def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10, eps=1e-10):
         z, dz, domain = self.z, self.dz, self.domain
         ukernel, uwall = (Abulk * self.kernel), self.uwall
         expneguwall = truncate_to_zero(np.exp(-uwall), z)
@@ -104,7 +109,7 @@ class Wall:
             uself = dz * np.convolve(Δρ, ukernel, mode='same')
             Δρ_new = rhob * (expneguwall*np.exp(-uself) - 1.0)
             h0, h1 = [np.max(np.abs(a)) for a in [Δρ, Δρ_new]]
-            α = alpha * h0 / h1
+            α = alpha * h0 / (h1 + eps)
             Δρ_new = (1-α)*Δρ + α*Δρ_new # mixing rule
             ΔΔρ = Δρ - Δρ_new
             int_abs_ΔΔρ = np.trapz(np.abs(ΔΔρ), dx=dz)

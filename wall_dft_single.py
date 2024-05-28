@@ -28,7 +28,7 @@ eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile one off 
 eparser.add_argument('--zcut', default=4.0, type=float, help='cut-off in z, default 4.0')
 eparser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
 eparser.add_argument('--vanilla', action='store_true', help='use vanilla wall model')
-eparser.add_argument('--conversion-factor', default=12.928, type=float, help='conversion factor kT/rc² = 12.928 mN.m')
+eparser.add_argument('--conversion-factor', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
 eparser.add_argument('-s', '--show', action='store_true', help='plot the density profile')
 eparser.add_argument('-o', '--output', help='output plot to, eg, pdf')
 args = eparser.parse_args()
