@@ -90,7 +90,7 @@ class Wall:
     def standard_wall(self, Awall):
         z = self.z
         self.uwall = 0.5*Awall*(1-z)**2
-        self.uwall[z<0] = 0.5*Awall # continuity for z < 0 (though irrelevant)
+        self.uwall[z<0] = np.inf # hard repulsive barrier
         self.uwall[z>1] = 0.0
         self.expneguwall = truncate_to_zero(np.exp(-self.uwall), z)
         self.model = f'Standard wall: Awall = {Awall}'
@@ -98,7 +98,7 @@ class Wall:
     def continuum_wall(self, Awall_rhob):
         z = self.z
         self.uwall = π*Awall_rhob/60.0*(1-z)**4*(2+3*z)
-        self.uwall[z<0] = π*Awall_rhob/30.0 # continuity for z < 0 (though irrelevant)
+        self.uwall[z<0] = np.inf # hard repulsive barrier
         self.uwall[z>1] = 0.0
         self.expneguwall = truncate_to_zero(np.exp(-self.uwall), z)
         self.model = f'Continuum wall: Awall*rhob = {Awall_rhob}'

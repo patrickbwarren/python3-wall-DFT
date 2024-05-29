@@ -88,6 +88,12 @@ be used in the above
  for 0 ≤ *z* ≤ 1, together with *U*(*z*) = 0 for *z* > 1, and
  *U*(−*z*) = *U*(*z*) for *z* < 0.
 
+#### Wall models
+
+We consider two different wall models, a 'standrd' one where
+
+* 
+
 
 ### Copying
 
