@@ -40,11 +40,11 @@ where *U*(*z*) is a partial integral of *U*(**r**) corresponding to
 the interaction between two parallel sheets of particles at unit density,
 separated by a distance *z*.
 
-The corresponding grand potential (per unit area) is given by the
-above expression − μ ∫ ρ(*z*), where μ is the chemical potential.  By
-eliminating μ in favour of the bulk density ρ<sub>b</sub>, and
-minimising the grand potential, one arrives at the following condition
-for the density profile in the wall potential,
+The corresponding grand potential (per unit area) is given by
+subtracting μ ∫ ρ(*z*) from the above expression, where μ is the
+chemical potential.  By eliminating μ in favour of the bulk density
+ρ<sub>b</sub>, and minimising the grand potential, one arrives at the
+following condition for the density profile in the wall potential,
 
 * ρ(*z*) = ρ<sub>b</sub> exp[ − *U*<sub>wall</sub>(*z*) − ∫ d*z*'
   Δρ(*z*') U(*z*−*z*') ] ,
