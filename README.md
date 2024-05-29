@@ -32,7 +32,7 @@ If we consider that *U*<sub>ext</sub> = *U*<sub>wall</sub> represents
 a wall in the plane normal to the *z*-direction, then this reduces to
 
 * ∫ ρ(*z*) [ln ρ(*z*) − 1] + ∫ ρ(*z*) *U*<sub>wall</sub>(*z*) + 1/2 ∫
-  ρ(*z*) ρ(*z*') U(|*z*−*z*'|) ,
+  ρ(*z*) ρ(*z*') *U*(*z*−*z*') ,
 
 where *U*(*z*) is a partial integral of *U*(**r**) corresponding to
 the interaction between two sheets of particles at unit density,
@@ -45,7 +45,7 @@ minimising the grand potential, one arrives at the following condition
 for the density profile in the wall potential,
 
 * ρ(*z*) = ρ<sub>b</sub> exp[ − *U*<sub>wall</sub>(*z*) − ∫ d*z*'
-  [ρ(*z*') − ρ<sub>b</sub>] U(|*z*−*z*'|) ] .
+  [ρ(*z*') − ρ<sub>b</sub>] U(*z*−*z*') ] .
 
 This has to be solved self-consistently, and this is what the code in
 this repository does. As input, one needs to specify the bulk density
@@ -54,9 +54,8 @@ and the two potential functions *U*(*z*) and *U*<sub>wall</sub>(*z*).
 The method is to start with the initial guess ρ(*z*) = ρ<sub>b</sub>
 exp[ − *U*<sub>w</sub>(*z*) ], and iterate the above, but mixing in
 only a fraction of the new solution at each iteration step to assure
-convergence (Picard method).  The integral in the above can be
-evaluated as a convolution, which is done using a standard numerical
-library routine.
+convergence (Picard method).  The integral can be evaluated as a
+convolution, using a standard numerical library routine.
 
 #### Thermodynamics
 

@@ -92,6 +92,7 @@ class Wall:
         self.uwall = 0.5*Awall*(1-z)**2
         self.uwall[z<0] = 0.5*Awall # continuity for z < 0 (though irrelevant)
         self.uwall[z>1] = 0.0
+        self.expneguwall = truncate_to_zero(np.exp(-self.uwall), z)
         self.model = f'Standard wall: Awall = {Awall}'
 
     def continuum_wall(self, Awall_rhob):
@@ -99,6 +100,7 @@ class Wall:
         self.uwall = π*Awall_rhob/60.0*(1-z)**4*(2+3*z)
         self.uwall[z<0] = π*Awall_rhob/30.0 # continuity for z < 0 (though irrelevant)
         self.uwall[z>1] = 0.0
+        self.expneguwall = truncate_to_zero(np.exp(-self.uwall), z)
         self.model = f'Continuum wall: Awall*rhob = {Awall_rhob}'
 
     def curly_ell(self): # available after the wall potential is set
@@ -108,14 +110,13 @@ class Wall:
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10, eps=1e-10):
         z, dz, domain = self.z, self.dz, self.domain
         ukernel, uwall = (Abulk * self.kernel), self.uwall
-        expneguwall = truncate_to_zero(np.exp(-uwall), z)
-        Δρ = rhob * (expneguwall - 1) # initial guess
+        Δρ = rhob * (self.expneguwall - 1) # initial guess
         # Iterate to solve Δρ = ρb [exp(-Uext-Uself) - 1] where
         # Uself = ∫ dz' Δρ(z') U(z'−z).  Use convolution from
         # numpy to evaluate this integral.
         for i in range(max_iters):
             uself = dz * np.convolve(Δρ, ukernel, mode='same')
-            Δρ_new = rhob * (expneguwall*np.exp(-uself) - 1.0)
+            Δρ_new = rhob * (self.expneguwall*np.exp(-uself) - 1.0)
             h0, h1 = [np.max(np.abs(a)) for a in [Δρ, Δρ_new]]
             α = alpha * h0 / (h1 + eps)
             Δρ_new = (1-α)*Δρ + α*Δρ_new # mixing rule
