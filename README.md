@@ -87,11 +87,12 @@ In DPD the interaction potential
 
 * *U*(*r*) = A (1−r)<sup>2</sup> / 2 
 
-for *r* < 1, and *U*(*r*) = 0 for *r* > 1. The range *r*<sub>c</sub> =
-1 sets the length scale, and the thermal energy scale
-*k*<sub>B</sub>*T* = 1. The DPD model is then characterised by the
-bulk density ρ<sub>b</sub> and repulsion amplitude *A*.  For example,
-the standard DPD water model has ρ<sub>b</sub> = 3 and *A* = 25.
+for *r* < 1, and *U*(*r*) = 0 for *r* > 1. The length scale is sete by
+the range *r*<sub>c</sub> = 1, and the thermal energy scale is set by
+the choice *k*<sub>B</sub>*T* = 1. The DPD model is then characterised
+by the bulk density ρ<sub>b</sub> and repulsion amplitude *A*.  For
+example, the standard DPD water model has ρ<sub>b</sub> = 3 and *A* =
+25.
 
 This gives the following partial integral to be used in the above,
 
