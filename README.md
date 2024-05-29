@@ -22,10 +22,9 @@ forthcoming publication in the area.
 ### What's being solved here?
 
 Consider a fluid of particles at a non-uniform density ρ(**r**)
-interacting with a soft, short-range, pairwise, radial potential
-*U*(*r*), in the presence of an external potential
-*U*<sub>ext</sub>(**r**). A mean-field density functional free energy
-for this system is
+interacting with a pair potential *U*(*r*), in the presence of an
+external potential *U*<sub>ext</sub>(**r**). A mean-field density
+functional free energy for this system is
 
 * ∫ ρ(**r**) [ln ρ(**r**) − 1] + ∫ ρ(**r**) *U*<sub>ext</sub>(**r**) +
   1/2 ∫ ρ(**r**) ρ(**r**') U(|**r**−**r**'|) .
@@ -83,7 +82,7 @@ also report the integral of |Δρ(*z*)| outside of the wall potential
 
 ####  Dissipative particle dynamics
 
-In DPD the interaction potential
+In DPD the soft, short-range pair potential is
 
 * *U*(*r*) = A (1−r)<sup>2</sup> / 2 
 
@@ -94,7 +93,8 @@ by the bulk density ρ<sub>b</sub> and repulsion amplitude *A*.  For
 example, the standard DPD water model has ρ<sub>b</sub> = 3 and *A* =
 25.
 
-This gives the following partial integral to be used in the above,
+This choice of pair potential gives the following partial integral to
+be used in the wall DFT calculations,
 
 * *U*(*z*) = π A (1 − *z*)<sup>3</sup> (1 + 3*z*) / 12
 
