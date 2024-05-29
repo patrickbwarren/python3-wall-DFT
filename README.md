@@ -60,7 +60,7 @@ the new solution at each iteration step to assure convergence (Picard
 method).  The integral in the exponential here can be evaluated as a
 convolution, using a standard numerical library routine.
 
-#### Thermodynamics
+#### Wall tension and surface excess
 
 Given a solution ρ(*z*), one can compute the wall tension γ and the
 surface excess Γ. The former is just the excess grand potential per
@@ -69,10 +69,17 @@ the wall (*z* ≥ 0).  The bulk grand potential per unit volume needed
 to calculate γ is just Ω / V = −*p* where, to the same level of
 approximation as the mean-field DFT, *p* = ρ<sub>b</sub> + 1/2
 ρ<sub>b</sub><sup>2</sup> ∫ d<sup>3</sup>**r** U(**r**) (cf. first
-expression above).  To quantify the perturbation caused by the wall, I
-also define the perturbation in the bulk as the integral of |Δρ(*z*)|
-outside of the wall potential (*z* > 1 in the wall models defined
-below).
+expression above).
+
+It follows from classical thermodynamics that dγ = − Γ dμ (Gibbs
+isotherm). It is also true that d*p* = ρ dμ (Gibbs-Duhem relation).
+Hence the surface excess Γ = − ρ dγ/d*p*.  Note that Γ / ρ can be
+interpreted as an adsorption length (which can be positive or
+negative).
+
+To quantify the perturbation caused by the wall, I also define the
+perturbation in the bulk as the integral of |Δρ(*z*)| outside of the
+wall potential (*z* > 1 in the wall models defined below).
 
 ####  Dissipative particle dynamics
 
