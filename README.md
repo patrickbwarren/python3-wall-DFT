@@ -6,7 +6,15 @@ This code computes the density profile, surface excess, and wall
 tension, for a fluid of pure dissipative particle dynamics (DPD)
 beads against a wall, using a mean-field density functional theory (DFT).
 
-More details to follow...
+The codes are
+
+* `wall_dft.py` : python module implementing functionality;
+* `wall_dft_single.py` : solve a single state point;
+* `wall_dft_awall_scan.py` : solve for an array of wall repulsion amplitudes;
+* `wall_dft_rhob_scan.py` : solve for an array of bulk densities;
+* `wall_dft_zero.py` : solve for zero surface excess or wall tension;
+* `wall_dft_minim.py` : solve for minimum perturbation to bulk.
+
 
 ### What's being solved here?
 

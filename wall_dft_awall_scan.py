@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Code to calculate surface density profiles, surface excess, and
-# surface tension, for DPD wall models with a simple DPD fluid.
+# wall tension, for DPD wall models with a simple DPD fluid.
 
 # This code is copyright (c) 2024 Patrick B Warren (STFC).
 # Email: patrick.warren{at}stfc.ac.uk.
@@ -24,6 +24,7 @@
 import wall_dft
 import numpy as np
 import pandas as pd
+from wall_dft import wall_args, solve_args, df_header, df_to_agr
 
 eparser = wall_dft.ExtendedArgumentParser(description='DFT wall property table calculator')
 eparser.awall.default = '0,40,5'
@@ -32,12 +33,11 @@ eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12
 eparser.add_argument('-o', '--output', help='output data to, eg, .dat')
 args = eparser.parse_args()
 
-max_iters = eval(args.max_iters.replace('^', '**'))
-
 Alo, Ahi, Astep = eval(args.Awall) # returns a tuple
 Awalls = np.linspace(Alo, Ahi, round((Ahi-Alo)/Astep)+1, dtype=float)
 
-wall = wall_dft.Wall(dz=args.dz, zmax=args.zmax)
+wall = wall_dft.Wall(**wall_args(args))
+
 if args.verbose:
     print(wall.about)
 
@@ -48,7 +48,7 @@ results = []
 
 for Awall in Awalls:
     wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
-    iters, conv = wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
+    iters, conv = wall.solve(rhob, Abulk, **solve_args(args))
     Γ = wall.surface_excess()
     w = wall.abs_deviation()
     γ, _, _ = wall.wall_tension()
@@ -61,18 +61,15 @@ schema = {'Awall':float, 'Gamma':float, 'gamma':float,
           'abs_dev':float, 'conv':float, 'iters':int}
 df = pd.DataFrame(results, columns=schema.keys()).astype(schema)
 
-# column for surface tension in physical units
+# column for wall tension in physical units
 icol = df.columns.get_loc('gamma') + 1
 df.insert(icol, 'mN.m', df['gamma'] * args.ktbyrc2)
 
 if args.output:
     df.drop(['conv', 'iters'], axis=1, inplace=True)
-    column_heads = [f'{col}({i+1})' for i, col in enumerate(df.columns)]
-    header_row = '#  ' + '  '.join(column_heads)
-    data_rows = df.to_string(index=False).split('\n')[1:]
     with open(args.output, 'w') as f:
-        print('\n'.join([header_row] + data_rows), file=f)
-    print('Data:', ', '.join(column_heads), 'written to', args.output)
+        print(df_to_agr(df), file=f)
+    print('Data:', ', '.join(df_header(df)), 'written to', args.output)
 else:
     print(df.set_index('Awall'))
 

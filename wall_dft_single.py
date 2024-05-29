@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Code to calculate surface density profiles, surface excess, and
-# surface tension, for DPD wall models with a simple DPD fluid.
+# wall tension, for DPD wall models with a simple DPD fluid.
 
 # This code is copyright (c) 2024 Patrick B Warren (STFC).
 # Email: patrick.warren{at}stfc.ac.uk.
@@ -26,7 +26,7 @@
 # standard water (A = 25, ρb = 3), this is γ = 15π/16 ≈ 2.94524.
 
 import wall_dft
-from numpy import pi as π
+from wall_dft import wall_args, df_header, df_to_agr
 
 eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile one off calculator')
 eparser.add_argument('--zcut', default=4.0, type=float, help='cut-off in z, default 4.0')
@@ -36,9 +36,7 @@ eparser.add_argument('-s', '--show', action='store_true', help='plot the density
 eparser.add_argument('-o', '--output', help='output plot to, eg, pdf')
 args = eparser.parse_args()
 
-max_iters = eval(args.max_iters.replace('^', '**'))
-
-wall = wall_dft.Wall(dz=args.dz, zmax=args.zmax)
+wall = wall_dft.Wall(**wall_args(args))
 
 print(wall.about)
 
@@ -46,34 +44,14 @@ Awall = eval(args.Awall)
 Abulk = eval(args.Abulk)
 rhob = eval(args.rhob)
 
-print('Awall, Abulk, rhob = ', Awall, Abulk, rhob)
-
-wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
-print(wall.model)
-
-iters, conv = wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
-
-ρ = wall.density_profile()
-Γ = wall.surface_excess()
-w = wall.abs_deviation()
-γ, ωb, Lz = wall.wall_tension()
-p_mf = rhob + π/30 * Abulk * rhob**2
-
-print('Converged after %i iterations, ∫dz|ΔΔρ| = %g' % (iters, conv))
-print('Awall, Abulk, ρb = %g, %g, %g' % (Awall, Abulk, rhob))
-print('Surface excess per unit area Γ/A = %g' % Γ)
-print('Bulk grand potential ωb = %g' % ωb)
-print('Bulk mean field pressure, p = %g' % p_mf)
-print('Domain size Lz = %g' % Lz)
-print('Surface tension γ = %g ' % γ)
-print('Abs deviation = %g' % w)
-
-print('Surface tension γ = %g mN.m' % (γ * args.ktbyrc2))
+wall.solve_and_print(Awall, Abulk, rhob, args)
 
 if args.output:
 
     import numpy as np
     import pandas as pd
+
+    ρ = wall.density_profile()
 
     # Here we don't want to output every point with a discretisation
     # dz = 1e-3 or smaller, rather we downsample to a coarser grid.
@@ -83,12 +61,15 @@ if args.output:
     grid = plot_region & filtered # values to write out
     df = pd.DataFrame(np.array([wall.z[grid], ρ[grid], wall.uwall[grid]]).transpose(),
                       columns=['z', 'ρ', 'uwall'])
-    df.to_csv(args.output, sep='\t', header=False, index=False, float_format='%g')
-    print(', '.join([f'{s}({i+1})' for i, s in enumerate(df.columns)]), 'written to', args.output)
+    with open(args.output, 'w') as f:
+        print(df_to_agr(df), file=f)
+    print('Data:', ', '.join(df_header(df)), 'written to', args.output)
  
 elif args.show:
 
     import matplotlib.pyplot as plt
+
+    ρ = wall.density_profile()
 
     plot_region = ~(wall.z > args.zcut) # another binary array
 

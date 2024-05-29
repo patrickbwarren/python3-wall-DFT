@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Code to calculate surface density profiles, surface excess, and
-# surface tension, for DPD wall models with a simple DPD fluid.
+# wall tension, for DPD wall models with a simple DPD fluid.
 
 # This code is copyright (c) 2024 Patrick B Warren (STFC).
 # Email: patrick.warren{at}stfc.ac.uk.
@@ -24,28 +24,27 @@
 import wall_dft
 from numpy import pi as π
 from scipy.optimize import root_scalar as find_zero
+from wall_dft import wall_args, solve_args
 
 eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile zero calculator')
 eparser.awall.default = '0,40'
 eparser.awall.help='wall repulsion amplitude bracket, default ' + eparser.awall.default
 eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
-eparser.add_argument('-g', '--gamma', action='store_true', help='search for zero surface tension, rather than surface excess')
+eparser.add_argument('-g', '--gamma', action='store_true', help='zero wall tension, rather than zero surface excess')
 args = eparser.parse_args()
 
-max_iters = eval(args.max_iters.replace('^', '**'))
-
 Alo, Ahi = eval(args.Awall)
-rhob = eval(args.rhob)
 Abulk = eval(args.Abulk)
+rhob = eval(args.rhob)
 
-wall = wall_dft.Wall(dz=args.dz, zmax=args.zmax)
+wall = wall_dft.Wall(**wall_args(args))
 
 if args.verbose:
     print(wall.about)
 
 def func(Awall):
     wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
-    iters, conv = wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
+    iters, conv = wall.solve(rhob, Abulk, **solve_args(args))
     Γ = wall.surface_excess()
     w = wall.abs_deviation()
     γ, _, _ = wall.wall_tension()
@@ -55,7 +54,7 @@ def func(Awall):
 
 sol = find_zero(func, bracket=(Alo, Ahi), method='brentq')
 
-print('Solution for vanishing surface', 'tension' if args.gamma else 'excess')
+print('Solution for vanishing', 'wall tension' if args.gamma else 'surface excess')
 
 if args.verbose:
     print('     converged:', sol.converged)
@@ -65,24 +64,4 @@ if args.verbose:
 
 Awall = sol.root
 
-wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
-print(wall.model)
-
-iters, conv = wall.solve(rhob, Abulk, max_iters=max_iters, alpha=args.alpha, tol=args.tolerance)
-
-ρ = wall.density_profile()
-Γ = wall.surface_excess()
-w = wall.abs_deviation()
-γ, ωb, Lz = wall.wall_tension()
-p_mf = rhob + π/30 * Abulk * rhob**2
-
-print('Converged after %i iterations, ∫dz|ΔΔρ| = %g' % (iters, conv))
-print('Awall, Abulk, ρb = %g, %g, %g' % (Awall, Abulk, rhob))
-print('Surface excess per unit area Γ/A = %g' % Γ)
-print('Bulk grand potential ωb = %g' % ωb)
-print('Bulk mean field pressure, p = %g' % p_mf)
-print('Domain size Lz = %g' % Lz)
-print('Surface tension γ = %g ' % γ)
-print('Abs deviation = %g' % w)
-
-print('Surface tension γ = %g mN.m' % (γ * args.ktbyrc2))
+wall.solve_and_print(Awall, Abulk, rhob, args)

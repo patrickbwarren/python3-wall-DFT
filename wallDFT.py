@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Code to calculate surface density profiles, surface excess, and
-# surface tension, for DPD wall models with a simple DPD fluid.
+# wall tension, for DPD wall models with a simple DPD fluid.
 
 # This code is copyright (c) 2024 Patrick B Warren (STFC).
 # Email: patrick.warren{at}stfc.ac.uk.
@@ -41,7 +41,7 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
         self.rhob = self.parser.add_argument('--rhob', default='3.0', help='bulk density, default 3.0')
         self.abulk = self.parser.add_argument('--Abulk', default='25', help='bulk repulsion amplitude, default 25')
         self.awall = self.parser.add_argument('--Awall', default='10', help='wall repulsion amplitude, default 10')
-        self.parser.add_argument('-c', '--continuum', action='store_true', help='if set use a continuum half-space wall model')
+        self.parser.add_argument('-c', '--continuum', action='store_true', help='if set use a continuum half-space wall')
         self.parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 
     def add_argument(self, *args, **kwargs):
@@ -50,9 +50,17 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
     def parse_args(self, *args, **kwargs):
         return self.parser.parse_args(*args, **kwargs)
 
-# utility function
-    
+def wall_args(args):
+    '''Return a dict of generic args that can be used as **wall_args(args)'''
+    return {'dz': args.dz, 'zmax': args.zmax}
+
+def solve_args(args):
+    '''Return a dict of generic args that can be used as **solve_args(args)'''
+    max_iters = eval(args.max_iters.replace('^', '**'))
+    return {'max_iters': max_iters, 'alpha': args.alpha, 'tol': args.tolerance}
+
 def truncate_to_zero(a, z):
+    '''Truncate an array to zero for z < 0'''
     b = a.copy()
     b[z < 0] = 0.0
     return b
@@ -117,7 +125,7 @@ class Wall:
                 break
             Δρ = Δρ_new
         self.Δρ = Δρ # The density profile (should vanish inside the wall)
-        self.ρb = rhob # For use with surface tension calculation
+        self.ρb = rhob # For use with wall tension calculation
         self.Abulk = Abulk # -- ditto --
         return i, int_abs_ΔΔρ # for monitoring
 
@@ -134,19 +142,20 @@ class Wall:
     def abs_deviation(self):
         return np.trapz(np.abs(self.Δρ[self.domain & ~(self.z<1)]), dx=self.dz)
 
-    # Calculate the surface tension by first calculating the grand
+    # Calculate the wall tension by first calculating the grand
     # potential per unit area with a certain domain height Lz.
     # The pressure is p = ρb + 1/2 ρb² ∫ dz U(z) and the grand
     # potential is -Ω/A = ∫ dz ρ(z) + 1/2 ∫ dz dz' ρ(z) ρ(z')
     # U(z-z').  The z-integration limits are 0 to ∞ (but in any
     # case the density ρ(z) vanishes for z < 0).  The function
     # U(z) is the integrated DPD potential (ukernel).  With these
-    # quantities the surface tension γ = p*Lz + Ω/A.
+    # quantities the wall tension γ = p*Lz + Ω/A.
+
     # (Alternatively the pressure is the negative of the grand
     # potential density, p = -ω, in the homogeneous system.)  In
     # the calculation below the contribution Lz*ρb is omitted from
     # both the terms since it cancels in the expression for the
-    # surface tension.
+    # wall tension.
 
     def wall_tension(self):
         z, dz, domain = self.z, self.dz, self.domain
@@ -160,3 +169,33 @@ class Wall:
         Lz = z[domain][-1] - z[domain][0] # equivalent to above
         γ = ΩexbyA - Lz*ωbex
         return γ, ωb, Lz
+
+    def solve_and_print(self, Awall, Abulk, rhob, args):
+        self.continuum_wall(Awall*rhob) if args.continuum else self.standard_wall(Awall)
+        iters, conv = self.solve(rhob, Abulk, **solve_args(args))
+        Γ = self.surface_excess()
+        w = self.abs_deviation()
+        γ, ωb, Lz = self.wall_tension()
+        p_mf = rhob + π/30 * Abulk * rhob**2
+        print(self.model)
+        print('Converged after %i iterations, ∫dz|ΔΔρ| = %g' % (iters, conv))
+        print('Awall, Abulk, ρb = %g, %g, %g' % (Awall, Abulk, rhob))
+        print('Bulk grand potential ωb = %g' % ωb)
+        print('Bulk mean field pressure, p = %g' % p_mf)
+        print('Domain size Lz = %g' % Lz)
+        print('Abs deviation in bulk = %g' % w)
+        print('Surface excess per unit area Γ/A = %g' % Γ)
+        print('Wall tension γ = %g = %g mN.m' % (γ, γ * args.ktbyrc2))
+
+# Make the data output suitable for plotting in xmgrace if captured by redirection
+# stackoverflow.com/questions/30833409/python-deleting-the-first-2-lines-of-a-string
+
+def df_header(df):
+    '''Generate a header of column names as a list'''
+    return [f'{col}({i+1})' for i, col in enumerate(df.columns)]
+
+def df_to_agr(df):
+    '''Convert a pandas DataFrame to a string for an xmgrace data set'''
+    header_row = '#  ' + '  '.join(df_header(df))
+    data_rows = df.to_string(index=False, float_format='%g').split('\n')[1:]
+    return '\n'.join([header_row] + data_rows)
