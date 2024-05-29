@@ -87,9 +87,9 @@ In DPD the pair potential is
 * *U*(*r*) = A (1−r)<sup>2</sup> / 2 
 
 for *r* < 1, and *U*(*r*) = 0 for *r* > 1. The length scale is set by
-the range *r*<sub>c</sub> = 1, and the thermal energy scale is set by
-the choice *k*<sub>B</sub>*T* = 1. The DPD model is then characterised
-by the bulk density ρ<sub>b</sub> and repulsion amplitude *A*.  For
+the range *r*<sub>c</sub> = 1, and the energy scale is set by the
+choice *k*<sub>B</sub>*T* = 1. The DPD model is then characterised by
+the bulk density ρ<sub>b</sub> and repulsion amplitude *A*.  For
 example, the standard DPD water model has ρ<sub>b</sub> = 3 and *A* =
 25.
 
@@ -120,9 +120,9 @@ for 0 ≤ *z* ≤ 1, together with similarly *U*(*z*) = 0 for *z* > 1, and
 
 One can show that in the latter case, for *A*<sub>wall</sub>
 ρ<sub>wall</sub> = *A* ρ<sub>b</sub>, the mean-field DFT density
-profile is flat up to the wall, with ρ(*z*) = ρ<sub>b</sub> for *z* > 0.
-Under these conditions, the wall is minimally perturbative in
-the sense that Δρ(*z*) = 0 outside the wall, and so trivially the
+profile is flat up to the wall, with ρ(*z*) = ρ<sub>b</sub> for 
+*z* > 0.  Under these conditions, the wall is minimally perturbative
+in the sense that Δρ(*z*) = 0 outside the wall.  Trivially, the
 surface excess Γ = 0.  One can show that the wall tension calculated
 from the excess mean-field grand potential per unit area in this case
 is γ = π *A* ρ<sub>b</sub><sup>2</sup> / 240.
