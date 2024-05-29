@@ -20,8 +20,10 @@ built-in defaults.
 
 ### What's being solved here?
 
-Consider a fluid of particles interacting with the soft, short-range
-DPD potential *U*(*r*) with a non-uniform density ρ(**r**).
+Consider a fluid of particles at a non-uniform density ρ(**r**)
+interacting with a soft, short-range potential *U*(*r*), in the
+presence of an external potential *U*<sub>ext</sub>(**r**). A
+mean-field density functional free energy for this system is
 
 ### Copying
 
