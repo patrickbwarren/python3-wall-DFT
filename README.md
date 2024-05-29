@@ -66,9 +66,9 @@ surface excess Γ. The former is just the excess grand potential per
 unit area, and I define the latter as the integral of Δρ(*z*) outside
 the wall (*z* ≥ 0).  The bulk grand potential per unit volume needed
 to calculate γ is just Ω / V = −*p* where, to the same level of
-approximation as the mean-field DFT, *p* = ρ<sub>b</sub> + 1/2
-ρ<sub>b</sub><sup>2</sup> ∫ d<sup>3</sup>**r** U(**r**) (cf. first
-expression above).
+approximation as the mean-field DFT, the pressure *p* =
+ρ<sub>b</sub> + 1/2 ρ<sub>b</sub><sup>2</sup> ∫ d<sup>3</sup>**r**
+U(**r**) (cf. first expression above).
 
 It follows from classical thermodynamics that dγ = − Γ dμ (Gibbs
 isotherm). It is also true that d*p* = ρ dμ (Gibbs-Duhem relation).
