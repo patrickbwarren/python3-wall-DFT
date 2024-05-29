@@ -106,8 +106,7 @@ class Wall:
         self.model = f'Continuum wall: Awall*rhow = {Awall_rhow}'
 
     def curly_ell(self): # available after the wall potential is set
-        boltz_fact_minus_1 = truncate_to_zero(np.exp(-self.uwall), self.z) - 1.0
-        return np.trapz(boltz_fact_minus_1[self.domain], dx=self.dz)
+        return np.trapz((self.expneguwall[self.domain] - 1.0), dx=self.dz)
 
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10, eps=1e-10):
         z, dz, domain = self.z, self.dz, self.domain
