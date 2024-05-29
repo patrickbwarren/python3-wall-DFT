@@ -21,7 +21,7 @@ built-in defaults.
 ### What's being solved here?
 
 Consider a fluid of particles interacting with the soft, short-range
-DPD potential *U*(*r*)
+DPD potential *U*(*r*) with a non-uniform density ρ(**r**).
 
 ### Copying
 
