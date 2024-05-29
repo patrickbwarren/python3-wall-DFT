@@ -82,11 +82,11 @@ also report the integral of |Δρ(*z*)| outside of the wall potential
 
 ####  Dissipative particle dynamics
 
-In DPD the soft, short-range pair potential is
+In DPD the pair potential is
 
 * *U*(*r*) = A (1−r)<sup>2</sup> / 2 
 
-for *r* < 1, and *U*(*r*) = 0 for *r* > 1. The length scale is sete by
+for *r* < 1, and *U*(*r*) = 0 for *r* > 1. The length scale is set by
 the range *r*<sub>c</sub> = 1, and the thermal energy scale is set by
 the choice *k*<sub>B</sub>*T* = 1. The DPD model is then characterised
 by the bulk density ρ<sub>b</sub> and repulsion amplitude *A*.  For
