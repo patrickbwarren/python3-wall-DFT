@@ -118,8 +118,8 @@ for 0 ≤ *z* ≤ 1, together with *U*<sub>wall</sub>(*z*) = 0 for *z* >
 
 for 0 ≤ *z* ≤ 1, together with similarly *U*<sub>wall</sub>(*z*) = 0
 for *z* > 1, and *U*<sub>wall</sub>(*z*) = ∞ for *z* < 0.  Note that
-the corresponding wall force − ∂*U*<sub>wall</sub> / ∂*z* =
-ρ<sub>b</sub> *U*(*z*) for *U*(*z*) given above.
+for *z* > 0 the corresponding wall force − ∂*U*<sub>wall</sub> / ∂*z*
+= ρ<sub>b</sub> *U*(*z*) for *U*(*z*) given above.
 
 One can show that in the latter case, for *A*<sub>wall</sub>
 ρ<sub>wall</sub> = *A* ρ<sub>b</sub>, the mean-field DFT density
