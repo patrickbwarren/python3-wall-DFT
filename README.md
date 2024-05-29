@@ -8,18 +8,20 @@ beads against a wall, using a mean-field density functional theory (DFT).
 
 The codes are
 
-* `wallDFT.py` : python module implementing functionality;
 * `wall_dft_single.py` : solve a single state point;
 * `wall_dft_awall_scan.py` : solve for an array of wall repulsion amplitudes;
 * `wall_dft_rhob_scan.py` : solve for an array of bulk densities;
 * `wall_dft_zero.py` : solve for zero surface excess or wall tension;
-* `wall_dft_minim.py` : solve for minimum perturbation to bulk.
+* `wall_dft_minim.py` : solve for minimum perturbation to bulk;
+* `wallDFT.py` : underlying python module implementing functionality.
 
 All codes can be run without command line parameters, using the
 built-in defaults.  
 
 ### What's being solved here?
 
+Consider a fluid of particles interacting with the soft, short-range
+DPD potential *U*(*r*)
 
 ### Copying
 
