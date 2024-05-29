@@ -15,8 +15,9 @@ The codes are
 * `wall_dft_minim.py` : solve for minimum perturbation to bulk;
 * `wallDFT.py` : underlying python module implementing functionality.
 
-All codes can be run without command line parameters, using the
-built-in defaults.  
+All the python scripts can be run without command line parameters,
+using the built-in defaults. They were developed to support a
+forthcoming publication in the area.
 
 ### What's being solved here?
 
@@ -47,30 +48,26 @@ minimising the grand potential, one arrives at the following condition
 for the density profile in the wall potential,
 
 * ρ(*z*) = ρ<sub>b</sub> exp[ − *U*<sub>wall</sub>(*z*) − ∫ d*z*'
-  [ρ(*z*') − ρ<sub>b</sub>] U(*z*−*z*') ] .
-
-This has to be solved self-consistently, and this is what the code in
-this repository does. As input, one needs to specify the bulk density
-and the two potential functions *U*(*z*) and *U*<sub>wall</sub>(*z*).
-The method is to start with the initial guess ρ(*z*) = ρ<sub>b</sub>
-exp[ − *U*<sub>w</sub>(*z*) ], and iterate the above, mixing in only a
-fraction of the new solution at each iteration step to assure
-convergence (Picard method).  The integral in the exponential here can
-be evaluated as a convolution, using a standard numerical library
-routine.
+  Δρ(*z*') U(*z*−*z*') ] ,
+  
+where Δρ(*z*) = ρ(*z*) − ρ<sub>b</sub>. This has to be solved
+self-consistently, and this is what the code in this repository
+does. As input, one needs to specify the bulk density and the two
+potential functions *U*(*z*) and *U*<sub>wall</sub>(*z*).  The method
+is to start with the initial guess ρ(*z*) = ρ<sub>b</sub> exp[ −
+*U*<sub>w</sub>(*z*) ], and iterate the above, mixing in a fraction of
+the new solution at each iteration step to assure convergence (Picard
+method).  The integral in the exponential here can be evaluated as a
+convolution, using a standard numerical library routine.
 
 #### Thermodynamics
 
 Given a solution ρ(*z*), one can compute the wall tension γ and the
 surface excess Γ. The former is just the excess grand potential per
 unit area, and I define the latter as the integral of Δρ(*z*) outside
-the wall (*z* ≥ 0), where
-
-* Δρ(*z*) = ρ(*z*) − ρ<sub>b</sub> .
-
-The bulk grand potential per unit volume needed to calculate γ is just
-Ω / V = −*p* where, to the same level of approximation as the
-mean-field DFT,
+the wall (*z* ≥ 0).  The bulk grand potential per unit volume needed
+to calculate γ is just Ω / V = −*p* where, to the same level of
+approximation as the mean-field DFT,
 
 * *p* = ρ<sub>b</sub> + 1/2 ρ<sub>b</sub><sup>2</sup> ∫
 d<sup>3</sup>**r** U(**r**)
