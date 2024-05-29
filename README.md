@@ -67,15 +67,12 @@ surface excess Γ. The former is just the excess grand potential per
 unit area, and I define the latter as the integral of Δρ(*z*) outside
 the wall (*z* ≥ 0).  The bulk grand potential per unit volume needed
 to calculate γ is just Ω / V = −*p* where, to the same level of
-approximation as the mean-field DFT,
-
-* *p* = ρ<sub>b</sub> + 1/2 ρ<sub>b</sub><sup>2</sup> ∫
-d<sup>3</sup>**r** U(**r**)
-
-(cf. first expression above).  To quantify the perturbation caused by
-the wall, I also define the perturbation in the bulk as the integral
-of |Δρ(*z*)| outside of the wall potential (*z* > 1 in the wall models
-defined below).
+approximation as the mean-field DFT, *p* = ρ<sub>b</sub> + 1/2
+ρ<sub>b</sub><sup>2</sup> ∫ d<sup>3</sup>**r** U(**r**) (cf. first
+expression above).  To quantify the perturbation caused by the wall, I
+also define the perturbation in the bulk as the integral of |Δρ(*z*)|
+outside of the wall potential (*z* > 1 in the wall models defined
+below).
 
 ####  Dissipative particle dynamics
 
@@ -83,12 +80,11 @@ In DPD the interaction potential
 
 * *U*(*r*) = A (1−r)<sup>2</sup> / 2 
 
-for *r* < 1, and *U*(*r*) = 0 for *r* > 1.  I set the range
-*r*<sub>c</sub> = 1 to set the length scale, and work in units where
-the thermal energy scale *k*<sub>B</sub>*T* = 1. The DPD model is then
-characterised by the bulk density ρ<sub>b</sub> and repulsion
-amplitude *A*.  For example, the standard DPD water model has
-ρ<sub>b</sub> = 3 and *A* = 25.
+for *r* < 1, and *U*(*r*) = 0 for *r* > 1. The range *r*<sub>c</sub> =
+1 sets the length scale, and the thermal energy scale
+*k*<sub>B</sub>*T* = 1. The DPD model is then characterised by the
+bulk density ρ<sub>b</sub> and repulsion amplitude *A*.  For example,
+the standard DPD water model has ρ<sub>b</sub> = 3 and *A* = 25.
 
 This gives the following partial integral to be used in the above,
 
