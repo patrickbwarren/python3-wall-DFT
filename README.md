@@ -128,11 +128,10 @@ from the excess mean-field grand potential per unit area in this case
 is γ = π *A* ρ<sub>b</sub><sup>2</sup> / 240.
 
 The continuum wall model derives its name because it also corresponds
-to the interaction potential for a DPD particle interacting with a
-continuum of wall particles at a density ρ<sub>wall</sub> in the *z* <
-0 half-space.  This is a model first introduced by Goicochea and
-Alarcón in [J. Chem. Phys. **134**, 014703
-(2011)](https://doi.org/10.1063/1.3517869).
+to a DPD particle interacting with a continuum of wall particles at a
+density ρ<sub>wall</sub> in the *z* < 0 half-space.  This is a model
+first introduced by Goicochea and Alarcón in [J. Chem. Phys. **134**,
+014703 (2011)](https://doi.org/10.1063/1.3517869).
 
 For early work on minimally-pertubative wall models in a more generic
 setting see Henderson in [Mol. Phys. **74**, 1125
