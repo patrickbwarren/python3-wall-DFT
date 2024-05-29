@@ -86,7 +86,7 @@ In DPD the interaction potential
 
 * *U*(*r*) = A (1−r)<sup>2</sup> / 2 
 
-for *r* < 1, and *U*(*r*) = 0 for *r* > 1.  We set the range
+for *r* < 1, and *U*(*r*) = 0 for *r* > 1.  I set the range
 *r*<sub>c</sub> = 1 to set the length scale, and work in units where
 the thermal energy scale *k*<sub>B</sub>*T* = 1. The DPD model is then
 characterised by the bulk density ρ<sub>b</sub> and repulsion
@@ -102,7 +102,7 @@ This gives the following partial integral to be used in the above,
 
 #### Wall models
 
-We consider two different wall models, a 'standard' one where
+I consider two different wall models, a 'standard' one where
 
 * *U*<sub>wall</sub>(*z*) = *A*<sub>wall</sub> (1 − *z*)<sup>2</sup> /
   2
@@ -111,7 +111,7 @@ for 0 ≤ *z* ≤ 1, together with *U*(*z*) = 0 for *z* > 1, and *U*(*z*)
  = ∞ for *z* < 0 (ie a hard repulsive barrier at *z* = 0); and a
  minimally perturbative 'continuum' wall model with
 
-* *U*<sub>wall</sub>(*z*) =π *A*<sub>wall</sub> ρ<sub>wall</sub> (1 −
+* *U*<sub>wall</sub>(*z*) = π *A*<sub>wall</sub> ρ<sub>wall</sub> (1 −
   z)<sup>4</sup> (2 + 3*z*) / 60
 
 for 0 ≤ *z* ≤ 1, together with similarly *U*(*z*) = 0 for *z* > 1, and
@@ -123,13 +123,14 @@ is flat up to the wall, with ρ(*z*) = ρ<sub>b</sub> for *z* > 0.
 Under these conditions, the wall is minimally perturbative in the
 sense that Δρ(*z*) = 0 outside the wall.  One can show that the wall
 tension calculated from the excess mean-field grand potential per unit
-area is γ = π *A* ρ<sub>b</sub><sup>2</sup> / 240.
+area is γ = π *A* ρ<sub>b</sub><sup>2</sup> / 240 in this case.
 
-This latter case also corresponds to the interaction potential for a
-DPD particle interacting with a continuum of wall particles at a
-density ρ<sub>wall</sub> in the *z* < 0 half-space.  This is a model
-first introduced by Goicochea and Alarcón in [J. Chem. Phys. **134**,
-014703 (2011)](https://doi.org/10.1063/1.3517869). 
+The continuum wall model derives its name because it also corresponds
+to the interaction potential for a DPD particle interacting with a
+continuum of wall particles at a density ρ<sub>wall</sub> in the *z* <
+0 half-space.  This is a model first introduced by Goicochea and
+Alarcón in [J. Chem. Phys. **134**, 014703
+(2011)](https://doi.org/10.1063/1.3517869).
 
 For early work on minimally-pertubative wall models in a more generic
 setting see Henderson in [Mol. Phys. **74**, 1125
