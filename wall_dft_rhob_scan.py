@@ -29,8 +29,6 @@ from wallDFT import wall_args, solve_args, df_header, df_to_agr
 eparser = wallDFT.ExtendedArgumentParser(description='DFT wall property table calculator')
 eparser.rhob.default = '0,3.5,0.5'
 eparser.rhob.help='bulk densities, default ' + eparser.rhob.default
-eparser.add_argument('--rbase', default=3.0, type=float, help='baseline bulk density, default 3.0')
-eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
 eparser.add_argument('-o', '--output', default=None, help='output data to, eg, .dat')
 args = eparser.parse_args()
 
@@ -44,9 +42,9 @@ if args.verbose:
 
 Awall = eval(args.Awall)
 Abulk = eval(args.Abulk)
-rhob_base = args.rbase
+rhow = eval(args.rhow)
 
-wall.continuum_wall(Awall*rhob_base) if args.continuum else wall.standard_wall(Awall)
+wall.continuum_wall(Awall*rhow) if args.continuum else wall.standard_wall(Awall)
 
 if args.verbose:
     print(wall.model)

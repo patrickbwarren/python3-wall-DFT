@@ -29,7 +29,6 @@ from wallDFT import wall_args, solve_args, df_header, df_to_agr
 eparser = wallDFT.ExtendedArgumentParser(description='DFT wall property table calculator')
 eparser.awall.default = '0,40,5'
 eparser.awall.help='wall repulsion amplitudes, default ' + eparser.awall.default
-eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
 eparser.add_argument('-o', '--output', help='output data to, eg, .dat')
 args = eparser.parse_args()
 
@@ -41,13 +40,14 @@ wall = wallDFT.Wall(**wall_args(args))
 if args.verbose:
     print(wall.about)
 
+rhow = eval(args.rhow)
 rhob = eval(args.rhob)
 Abulk = eval(args.Abulk)
 
 results = []
 
 for Awall in Awalls:
-    wall.continuum_wall(Awall*rhob) if args.continuum else wall.standard_wall(Awall)
+    wall.continuum_wall(Awall*rhow) if args.continuum else wall.standard_wall(Awall)
     iters, conv = wall.solve(rhob, Abulk, **solve_args(args))
     Γ = wall.surface_excess()
     w = wall.abs_deviation()

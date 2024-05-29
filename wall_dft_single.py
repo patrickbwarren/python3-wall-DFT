@@ -31,7 +31,6 @@ from wallDFT import wall_args, df_header, df_to_agr
 eparser = wallDFT.ExtendedArgumentParser(description='DPD wall profile one off calculator')
 eparser.add_argument('--zcut', default=4.0, type=float, help='cut-off in z, default 4.0')
 eparser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
-eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
 eparser.add_argument('-s', '--show', action='store_true', help='plot the density profile')
 eparser.add_argument('-o', '--output', help='output plot to, eg, pdf')
 args = eparser.parse_args()
@@ -41,10 +40,11 @@ wall = wallDFT.Wall(**wall_args(args))
 print(wall.about)
 
 Awall = eval(args.Awall)
+rhow = eval(args.rhow)
 Abulk = eval(args.Abulk)
 rhob = eval(args.rhob)
 
-wall.solve_and_print(Awall, Abulk, rhob, args)
+wall.solve_and_print(Awall, rhow, Abulk, rhob, args)
 
 if args.output:
 

@@ -39,8 +39,10 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
         self.parser.add_argument('--zmax', default=11.0, type=float, help='maximum distance in z, default 10.0')
         self.parser.add_argument('--dz', default=1e-3, type=float, help='spacing in z, default 1e-3')
         self.rhob = self.parser.add_argument('--rhob', default='3.0', help='bulk density, default 3.0')
+        self.rhow = self.parser.add_argument('--rhow', default='3.0', help='wall density, default 3.0')
         self.abulk = self.parser.add_argument('--Abulk', default='25', help='bulk repulsion amplitude, default 25')
         self.awall = self.parser.add_argument('--Awall', default='10', help='wall repulsion amplitude, default 10')
+        self.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
         self.parser.add_argument('-c', '--continuum', action='store_true', help='if set use a continuum half-space wall')
         self.parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 
@@ -95,13 +97,13 @@ class Wall:
         self.expneguwall = truncate_to_zero(np.exp(-self.uwall), z)
         self.model = f'Standard wall: Awall = {Awall}'
 
-    def continuum_wall(self, Awall_rhob):
+    def continuum_wall(self, Awall_rhow):
         z = self.z
-        self.uwall = π*Awall_rhob/60.0*(1-z)**4*(2+3*z)
+        self.uwall = π*Awall_rhow/60.0*(1-z)**4*(2+3*z)
         self.uwall[z<0] = np.inf # hard repulsive barrier
         self.uwall[z>1] = 0.0
         self.expneguwall = truncate_to_zero(np.exp(-self.uwall), z)
-        self.model = f'Continuum wall: Awall*rhob = {Awall_rhob}'
+        self.model = f'Continuum wall: Awall*rhow = {Awall_rhow}'
 
     def curly_ell(self): # available after the wall potential is set
         boltz_fact_minus_1 = truncate_to_zero(np.exp(-self.uwall), self.z) - 1.0
@@ -171,8 +173,8 @@ class Wall:
         γ = ΩexbyA - Lz*ωbex
         return γ, ωb, Lz
 
-    def solve_and_print(self, Awall, Abulk, rhob, args):
-        self.continuum_wall(Awall*rhob) if args.continuum else self.standard_wall(Awall)
+    def solve_and_print(self, Awall, rhow, Abulk, rhob, args):
+        self.continuum_wall(Awall*rhow) if args.continuum else self.standard_wall(Awall)
         iters, conv = self.solve(rhob, Abulk, **solve_args(args))
         Γ = self.surface_excess()
         w = self.abs_deviation()
@@ -180,7 +182,7 @@ class Wall:
         p_mf = rhob + π/30 * Abulk * rhob**2
         print(self.model)
         print('Converged after %i iterations, ∫dz|ΔΔρ| = %g' % (iters, conv))
-        print('Awall, Abulk, ρb = %g, %g, %g' % (Awall, Abulk, rhob))
+        print('Awall, ρw, Abulk, ρb = %g, %g, %g, %g' % (Awall, rhow, Abulk, rhob))
         print('Bulk grand potential ωb = %g' % ωb)
         print('Bulk mean field pressure, p = %g' % p_mf)
         print('Domain size Lz = %g' % Lz)
