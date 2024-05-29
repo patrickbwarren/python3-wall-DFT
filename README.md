@@ -53,30 +53,32 @@ This has to be solved self-consistently, and this is what the code in
 this repository does. As input, one needs to specify the bulk density
 and the two potential functions *U*(*z*) and *U*<sub>wall</sub>(*z*).
 The method is to start with the initial guess ρ(*z*) = ρ<sub>b</sub>
-exp[ − *U*<sub>w</sub>(*z*) ], and iterate the above, mixing in
-only a fraction of the new solution at each iteration step to assure
-convergence (Picard method).  The integral can be evaluated as a
-convolution, using a standard numerical library routine.
+exp[ − *U*<sub>w</sub>(*z*) ], and iterate the above, mixing in only a
+fraction of the new solution at each iteration step to assure
+convergence (Picard method).  The integral in the exponential here can
+be evaluated as a convolution, using a standard numerical library
+routine.
 
 #### Thermodynamics
 
-Given a solution ρ(*z*), one can compute the surface excess Γ and the
-wall tension γ.  We define the former as the integral of Δρ(*z*)
-outside the wall (*z* ≥ 0), where
+Given a solution ρ(*z*), one can compute the wall tension γ and the
+surface excess Γ. The former is just the excess grand potential per
+unit area, and I define the latter as the integral of Δρ(*z*) outside
+the wall (*z* ≥ 0), where
 
-* Δρ(*z*) = ρ(*z*) − ρ<sub>b</sub> , 
+* Δρ(*z*) = ρ(*z*) − ρ<sub>b</sub> .
 
-and the latter is the excess grand potential per unit area.  The bulk
-grand potential per unit volume needed here is just Ω / V = −*p*, where *p*
-is the mean-field pressure,
+The bulk grand potential per unit volume needed to calculate γ is just
+Ω / V = −*p* where, to the same level of approximation as the
+mean-field DFT,
 
 * *p* = ρ<sub>b</sub> + 1/2 ρ<sub>b</sub><sup>2</sup> ∫
 d<sup>3</sup>**r** U(**r**)
 
-(cf. first expression above).  To minimise the perturbation caused by
-the wall, one can also define the perturbation in the bulk as the
-integral of |Δρ(*z*)| outside of the wall potential (*z* > 1 in the
-wall models defined below).
+(cf. first expression above).  To quantify the perturbation caused by
+the wall, I also define the perturbation in the bulk as the integral
+of |Δρ(*z*)| outside of the wall potential (*z* > 1 in the wall models
+defined below).
 
 ####  Dissipative particle dynamics
 
