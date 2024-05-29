@@ -117,14 +117,14 @@ for 0 ≤ *z* ≤ 1, together with *U*(*z*) = 0 for *z* > 1, and *U*(*z*)
 for 0 ≤ *z* ≤ 1, together with similarly *U*(*z*) = 0 for *z* > 1, and
 *U*(*z*) = ∞ for *z* < 0.
 
-One can show that in the latter case, for *A*<sub>wall</sub> = *A* and
-ρ<sub>wall</sub> = ρ<sub>b</sub>, the mean-field DFT density profile
-is flat up to the wall, with ρ(*z*) = ρ<sub>b</sub> for *z* > 0.
-Under these conditions, the wall is minimally perturbative in the
-sense that Δρ(*z*) = 0 outside the wall, and so trivially the surface
-excess Γ = 0.  One can show that the wall tension calculated from the
-excess mean-field grand potential per unit area in this case is γ = π
-*A* ρ<sub>b</sub><sup>2</sup> / 240.
+One can show that in the latter case, for *A*<sub>wall</sub>
+ρ<sub>wall</sub> = *A* ρ<sub>b</sub>, the mean-field DFT density
+profile is flat up to the wall, with ρ(*z*) = ρ<sub>b</sub> for *z*
+> 0.  Under these conditions, the wall is minimally perturbative in
+the sense that Δρ(*z*) = 0 outside the wall, and so trivially the
+surface excess Γ = 0.  One can show that the wall tension calculated
+from the excess mean-field grand potential per unit area in this case
+is γ = π *A* ρ<sub>b</sub><sup>2</sup> / 240.
 
 The continuum wall model derives its name because it also corresponds
 to the interaction potential for a DPD particle interacting with a
