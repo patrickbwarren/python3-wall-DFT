@@ -72,9 +72,9 @@ U(**r**) (cf. first expression above).
 
 It follows from classical thermodynamics that dγ = − Γ dμ (Gibbs
 isotherm). It is also true that d*p* = ρ dμ (Gibbs-Duhem relation).
-Hence the surface excess Γ = − ρ dγ/d*p*, and this can be verified
+Hence the dγ/d*p* = − Γ / ρ , and this can be verified
 numerically.  Note that Γ / ρ can be interpreted as an adsorption
-length (which can be positive or negative).
+length, which can be positive or negative.
 
 To quantify the perturbation in the bulk caused by the wall, the codes
 also report the integral of |Δρ(*z*)| outside of the wall potential
