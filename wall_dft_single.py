@@ -32,7 +32,7 @@ eparser = wallDFT.ExtendedArgumentParser(description='DPD wall profile one off c
 eparser.add_argument('--zcut', default=4.0, type=float, help='cut-off in z, default 4.0')
 eparser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
 eparser.add_argument('-s', '--show', action='store_true', help='plot the density profile')
-eparser.add_argument('-o', '--output', help='output plot to, eg, pdf')
+eparser.add_argument('-o', '--output', help='output data for xmgrace, etc')
 args = eparser.parse_args()
 
 wall = wallDFT.Wall(**wall_args(args))
