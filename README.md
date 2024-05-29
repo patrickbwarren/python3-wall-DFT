@@ -108,15 +108,18 @@ I consider two different wall models, a 'standard' one where
 * *U*<sub>wall</sub>(*z*) = *A*<sub>wall</sub> (1 − *z*)<sup>2</sup> /
   2
 
-for 0 ≤ *z* ≤ 1, together with *U*(*z*) = 0 for *z* > 1, and *U*(*z*)
- = ∞ for *z* < 0 (ie a hard repulsive barrier at *z* = 0); and a
- minimally perturbative 'continuum' wall model with
+for 0 ≤ *z* ≤ 1, together with *U*<sub>wall</sub>(*z*) = 0 for *z* >
+ 1, and *U*<sub>wall</sub>(*z*) = ∞ for *z* < 0 (ie a hard repulsive
+ barrier at *z* = 0); and a minimally perturbative 'continuum' wall
+ model with
 
 * *U*<sub>wall</sub>(*z*) = π *A*<sub>wall</sub> ρ<sub>wall</sub> (1 −
   z)<sup>4</sup> (2 + 3*z*) / 60
 
-for 0 ≤ *z* ≤ 1, together with similarly *U*(*z*) = 0 for *z* > 1, and
-*U*(*z*) = ∞ for *z* < 0.
+for 0 ≤ *z* ≤ 1, together with similarly *U*<sub>wall</sub>(*z*) = 0
+for *z* > 1, and *U*<sub>wall</sub>(*z*) = ∞ for *z* < 0.  Note that
+the corresponding wall force − ∂*U*<sub>wall</sub>/∂*z* =
+ρ<sub>b</sub> *U*(*z*) for *U*(*z*) given above.
 
 One can show that in the latter case, for *A*<sub>wall</sub>
 ρ<sub>wall</sub> = *A* ρ<sub>b</sub>, the mean-field DFT density
