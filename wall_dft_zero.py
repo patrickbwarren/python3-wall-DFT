@@ -21,12 +21,12 @@
 # along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-import wall_dft
+import wallDFT
 from numpy import pi as π
 from scipy.optimize import root_scalar as find_zero
-from wall_dft import wall_args, solve_args
+from wallDFT import wall_args, solve_args
 
-eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile zero calculator')
+eparser = wallDFT.ExtendedArgumentParser(description='DPD wall profile zero calculator')
 eparser.awall.default = '0,40'
 eparser.awall.help='wall repulsion amplitude bracket, default ' + eparser.awall.default
 eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
@@ -37,7 +37,7 @@ Alo, Ahi = eval(args.Awall)
 Abulk = eval(args.Abulk)
 rhob = eval(args.rhob)
 
-wall = wall_dft.Wall(**wall_args(args))
+wall = wallDFT.Wall(**wall_args(args))
 
 if args.verbose:
     print(wall.about)

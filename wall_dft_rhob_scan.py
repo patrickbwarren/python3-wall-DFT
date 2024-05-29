@@ -21,12 +21,12 @@
 # along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-import wall_dft
+import wallDFT
 import numpy as np
 import pandas as pd
-from wall_dft import wall_args, solve_args, df_header, df_to_agr
+from wallDFT import wall_args, solve_args, df_header, df_to_agr
 
-eparser = wall_dft.ExtendedArgumentParser(description='DFT wall property table calculator')
+eparser = wallDFT.ExtendedArgumentParser(description='DFT wall property table calculator')
 eparser.rhob.default = '0,3.5,0.5'
 eparser.rhob.help='bulk densities, default ' + eparser.rhob.default
 eparser.add_argument('--rbase', default=3.0, type=float, help='baseline bulk density, default 3.0')
@@ -37,7 +37,7 @@ args = eparser.parse_args()
 rholo, rhohi, rhostep = eval(args.rhob) # returns a tuple
 rhobs = np.linspace(rholo, rhohi, round((rhohi-rholo)/rhostep)+1, dtype=float)
 
-wall = wall_dft.Wall(**wall_args(args))
+wall = wallDFT.Wall(**wall_args(args))
 
 if args.verbose:
     print(wall.about)

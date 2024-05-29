@@ -25,10 +25,10 @@
 # so that the surface excess vanishes.  However γ = π A ρb²/240 ; for
 # standard water (A = 25, ρb = 3), this is γ = 15π/16 ≈ 2.94524.
 
-import wall_dft
-from wall_dft import wall_args, df_header, df_to_agr
+import wallDFT
+from wallDFT import wall_args, df_header, df_to_agr
 
-eparser = wall_dft.ExtendedArgumentParser(description='DPD wall profile one off calculator')
+eparser = wallDFT.ExtendedArgumentParser(description='DPD wall profile one off calculator')
 eparser.add_argument('--zcut', default=4.0, type=float, help='cut-off in z, default 4.0')
 eparser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
 eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
@@ -36,7 +36,7 @@ eparser.add_argument('-s', '--show', action='store_true', help='plot the density
 eparser.add_argument('-o', '--output', help='output plot to, eg, pdf')
 args = eparser.parse_args()
 
-wall = wall_dft.Wall(**wall_args(args))
+wall = wallDFT.Wall(**wall_args(args))
 
 print(wall.about)
 

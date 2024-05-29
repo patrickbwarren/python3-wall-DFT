@@ -21,12 +21,12 @@
 # along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-import wall_dft
+import wallDFT
 import numpy as np
 import pandas as pd
-from wall_dft import wall_args, solve_args, df_header, df_to_agr
+from wallDFT import wall_args, solve_args, df_header, df_to_agr
 
-eparser = wall_dft.ExtendedArgumentParser(description='DFT wall property table calculator')
+eparser = wallDFT.ExtendedArgumentParser(description='DFT wall property table calculator')
 eparser.awall.default = '0,40,5'
 eparser.awall.help='wall repulsion amplitudes, default ' + eparser.awall.default
 eparser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
@@ -36,7 +36,7 @@ args = eparser.parse_args()
 Alo, Ahi, Astep = eval(args.Awall) # returns a tuple
 Awalls = np.linspace(Alo, Ahi, round((Ahi-Alo)/Astep)+1, dtype=float)
 
-wall = wall_dft.Wall(**wall_args(args))
+wall = wallDFT.Wall(**wall_args(args))
 
 if args.verbose:
     print(wall.about)
