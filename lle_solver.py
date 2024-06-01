@@ -89,7 +89,7 @@ for i, x in enumerate(xx):
     μ1 = ln(ρ1) + π/15*(A11*ρ1 + A12*ρ2)
     μ2 = ln(ρ2) + π/15*(A12*ρ1 + A22*ρ2)
     p = ρ + π/30*(A11*ρ1**2 + 2*A12*ρ1*ρ2 + A22*ρ2**2)
-    print(f'phase {i}:  x, ρ  = \t{x}\t{ρ}')
+    print(f'phase {i}: x, 1-x, ρ = \t{x}\t{1-x}\t{ρ}')
     print(f'phase {i}: ρ1, ρ2 = \t{ρ1}\t{ρ2}')
     print(f'phase {i}: μ1, μ2, p = \t{μ1}\t{μ2}\t{p}')
 
