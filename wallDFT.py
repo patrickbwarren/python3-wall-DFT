@@ -113,11 +113,11 @@ class Wall:
 
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10, eps=1e-10):
         z, dz = self.z, self.dz
-        ukernel, uwall = (Abulk * self.kernel), self.uwall
-        Δρ = rhob * (self.expneguwall - 1) # initial guess
+        ukernel, expneguwall = (Abulk * self.kernel), self.expneguwall
+        Δρ = rhob * (expneguwall - 1) # initial guess
         for i in range(max_iters):
             uself = dz * np.convolve(Δρ, ukernel, mode='same')
-            Δρ_new = rhob * (self.expneguwall*exp(-uself) - 1) # new guess
+            Δρ_new = rhob * (expneguwall*exp(-uself) - 1) # new guess
             h0, h1 = [np.max(np.abs(x)) for x in [Δρ, Δρ_new]]
             α = alpha * h0 / (h1 + eps)
             Δρ_new = (1-α)*Δρ + α*Δρ_new # mixing rule
