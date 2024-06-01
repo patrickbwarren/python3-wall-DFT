@@ -46,6 +46,7 @@ parser = argparse.ArgumentParser(description='DPD LLE one-off phase coexistence 
 parser.add_argument('-r', '--rho', default=3.0, type=float, help='baseline density, default 3.0')
 parser.add_argument('-a', '--allA', default='25,30,25', help='A11, A12, A22, default 25, 30, 25')
 parser.add_argument('-g', '--guess', default='0.01,0.9', help='initial guess x, default 0.01, 0.9')
+parser.add_argument('--eps', default=1e-6, type=float, help='tolerance to declare coexistence')
 parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 args = parser.parse_args()
 
@@ -77,7 +78,7 @@ if args.verbose > 1:
 xx = 1 / (1 + exp(-soln.x))
 
 sum_xx = np.sum(xx)
-if abs(xx[1]-xx[0]) < 1e-6 or abs(sum_xx-1) > 1e-6:
+if abs(xx[1]-xx[0]) < args.eps or abs(sum_xx-1) > args.eps:
     print('State points likely coalesced,  x, 1-x, sum =', xx[0], xx[1], sum_xx)
 else:
     print('Coexisting states likely found, x, 1-x, sum =', xx[0], xx[1], sum_xx)
