@@ -142,7 +142,7 @@ class Wall:
         return np.trapz(self.Δρ[self.domain], dx=self.dz)
 
     def abs_deviation(self):
-        bulk = ~(self.z<1) & ~(self.z > self.zmax - 1)
+        bulk = self.domain & ~(self.z<1) # z = 1 to Lz
         return np.trapz(np.abs(self.Δρ[bulk]), dx=self.dz)
 
     # Calculate the wall tension by first calculating the grand
