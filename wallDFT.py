@@ -106,7 +106,7 @@ class Wall:
         self.model = f'Continuum wall: Awall*rhow = {Awall_rhow}'
 
     def curly_ell(self): # available after the wall potential is set
-        return np.trapz((self.expneguwall[self.domain] - 1.0), dx=self.dz)
+        return np.trapz((self.expneguwall[self.domain] - 1), dx=self.dz)
 
     # Here solve Δρ = ρb [exp(-Uwall-Uself) - 1] iteratively, where
     # Uself = ∫ dz' Δρ(z') U(z'−z) uses convolution from numpy.

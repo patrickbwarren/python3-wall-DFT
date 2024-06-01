@@ -75,23 +75,44 @@ soln = root(fun, y0, args=(p0, A11, A12, A22))
 if args.verbose > 1:
     print(soln)
 
-xx = 1 / (1 + exp(-soln.x))
+x = 1 / (1 + exp(-soln.x))
 
-if abs(xx[1]-xx[0]) < args.eps:
-    print('State points likely coalesced,  x1, x2 =', xx[0], xx[1])
+if abs(x[1]-x[0]) < args.eps:
+    print('State points likely coalesced,  x1, x2 =', x[0], x[1])
 else:
-    print('Coexisting states likely found, x1, x2 =', xx[0], xx[1])
+    print('Coexisting states likely found, x1, x2 =', x[0], x[1])
 
 if args.verbose:
-    for i, x in enumerate(xx):
-        a = π/30*(A11*x**2 + 2*A12*x*(1-x) + A22*(1-x)**2)
+    for i, xx in enumerate(x):
+        a = π/30*(A11*xx**2 + 2*A12*xx*(1-xx) + A22*(1-xx)**2)
         ρ = (sqrt(1 + 4*a*p0) - 1) / (2*a)
-        ρ1, ρ2 = x*ρ, (1-x)*ρ
+        ρ1, ρ2 = xx*ρ, (1-xx)*ρ
         μ1 = ln(ρ1) + π/15*(A11*ρ1 + A12*ρ2)
         μ2 = ln(ρ2) + π/15*(A12*ρ1 + A22*ρ2)
         p = ρ + π/30*(A11*ρ1**2 + 2*A12*ρ1*ρ2 + A22*ρ2**2)
-        print(f'phase {i}: x, 1-x, ρ = \t{x}\t{1-x}\t{ρ}')
+        print(f'phase {i}: x, 1-x, ρ = \t{xx}\t{1-xx}\t{ρ}')
         print(f'phase {i}: ρ1, ρ2 = \t{ρ1}\t{ρ2}')
         print(f'phase {i}: μ1, μ2, p = \t{μ1}\t{μ2}\t{p}')
 
+a = π/30*(A11*x**2 + 2*A12*x*(1-x) + A22*(1-x)**2)
+ρ = (sqrt(1 + 4*a*p0) - 1) / (2*a) # a 2-vector containing the total densities
+ρ1, ρ2 = x*ρ, (1-x)*ρ # these are 2-vectors containing the coexisting densities
+μ1 = ln(ρ1) + π/15*(A11*ρ1 + A12*ρ2)
+μ2 = ln(ρ2) + π/15*(A12*ρ1 + A22*ρ2)
+p = ρ + π/30*(A11*ρ1**2 + 2*A12*ρ1*ρ2 + A22*ρ2**2) # should be the same
+
+for v in ['ρ', 'x', 'ρ1', 'ρ2', 'μ1', 'μ2', 'p']:
+    print(f'{v:>3} =', eval(v))
+
+
+# algorithm for computing interfacial profiles
+
+# define a kernel K(z) and calculate the approximate value of pi/15
+# solve the coexistence problem as above and capture chemical potentials
+# initial guess to density profiles could be sharp step function
+# Picard iterate the following 
+# rho_i(z) = exp[ - mu_i - sum_j int dz' rho_j(z') U_ij(z-z') ]
+
+# create an array z in [zmin, zmax] and a computational domain
+# [zmin+1, zmax-1] within which the convolution operation is valid.
 

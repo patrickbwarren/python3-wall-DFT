@@ -25,6 +25,17 @@
 # so that the surface excess vanishes.  However γ = π A ρb²/240 ; for
 # standard water (A = 25, ρb = 3), this is γ = 15π/16 ≈ 2.94524.
 
+# For benchmarking, this should be the output for a standard wall with
+# the default arguments:
+#  Abs deviation in bulk = 0.0487065
+#  Surface excess per unit area Γ/A = 0.19294
+#  Wall tension γ = 1.63487 = 21.1355 mN.m
+# and the same for a continuum wall (note the negative wall tension):
+#  Abs deviation in bulk = 0.0348605
+#  Surface excess per unit area Γ/A = 0.447014
+#  Wall tension γ = -1.62926 = -21.0631 mN.m
+
+
 import wallDFT
 from wallDFT import wall_args, df_header, df_to_agr
 
