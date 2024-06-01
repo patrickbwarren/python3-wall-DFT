@@ -70,7 +70,7 @@ def truncate_to_zero(a, z):
 class Wall:
 
     # Define the kernel U(z) on the domain -1 < z < 1.  The function
-    # is π/12 (1−z)³(1+3z) for 0 < z < 1 and U(-z) = U(z) for z < 0.
+    # is π/12 (1−z)³ (1+3z) for 0 < z < 1 and U(-z) = U(z) for z < 0.
     # We omit the 'A' factor, and restore it when solving for the
     # density profile.  The domain z in [-1, 1] here includes the
     # ends.  This means that np.trapz is equivalent to np.conv since
