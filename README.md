@@ -17,9 +17,11 @@ The codes are
 
 All the python scripts can be run without command line parameters,
 using the built-in defaults. They were developed to support a
-forthcoming publication in the area. The other scripts in this
-repository are experimental: you are welcome to investigate them and
-use them, but they are not particularly well documented !
+forthcoming publication in the area. 
+
+The other scripts in this repository are experimental: you are welcome
+to investigate them and use them, but they are not particularly well
+documented !
 
 ### What's being solved here?
 
