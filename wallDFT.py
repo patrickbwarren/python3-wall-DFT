@@ -23,11 +23,11 @@
 
 import argparse
 import numpy as np
+from numpy import exp
 from numpy import pi as π
 
 # parser.add_argument returns a handle to the argument object which
-# can be attached to parser itself as an attribute.  This can be
-# accessed to replace the default value and help string.
+# can be accessed to replace the default value and help string.
 
 class ExtendedArgumentParser(argparse.ArgumentParser):
 
@@ -81,7 +81,7 @@ class Wall:
         self.zmax = zmax
         self.z = np.linspace(-1.0, zmax, round((1.0+zmax)/dz)+1, dtype=float) # z ∈ [-1, zmax]
         self.not_inside_wall = ~(self.z < 0) # binary array
-        self.not_above_zmax_minus_one = ~(self.z > self.zmax - 1.0) # ditto
+        self.not_above_zmax_minus_one = ~(self.z > self.zmax - 1) # ditto
         self.domain = self.not_inside_wall & self.not_above_zmax_minus_one # ditto
         self.idx = np.round(self.z/self.dz).astype(int) # index with origin z = 0.0 --> 0
         z = np.linspace(-1.0, 1.0, round(2.0/self.dz)+1, dtype=float)
@@ -94,7 +94,7 @@ class Wall:
         self.uwall = 0.5*Awall*(1-z)**2
         self.uwall[z<0] = np.inf # hard repulsive barrier
         self.uwall[z>1] = 0.0
-        self.expneguwall = truncate_to_zero(np.exp(-self.uwall), z)
+        self.expneguwall = truncate_to_zero(exp(-self.uwall), z)
         self.model = f'Standard wall: Awall = {Awall}'
 
     def continuum_wall(self, Awall_rhow):
@@ -102,23 +102,23 @@ class Wall:
         self.uwall = π*Awall_rhow/60.0*(1-z)**4*(2+3*z)
         self.uwall[z<0] = np.inf # hard repulsive barrier
         self.uwall[z>1] = 0.0
-        self.expneguwall = truncate_to_zero(np.exp(-self.uwall), z)
+        self.expneguwall = truncate_to_zero(exp(-self.uwall), z)
         self.model = f'Continuum wall: Awall*rhow = {Awall_rhow}'
 
     def curly_ell(self): # available after the wall potential is set
         return np.trapz((self.expneguwall[self.domain] - 1.0), dx=self.dz)
 
+    # Here solve Δρ = ρb [exp(-Uwall-Uself) - 1] iteratively, where
+    # Uself = ∫ dz' Δρ(z') U(z'−z) uses convolution from numpy.
+
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10, eps=1e-10):
-        z, dz, domain = self.z, self.dz, self.domain
+        z, dz = self.z, self.dz
         ukernel, uwall = (Abulk * self.kernel), self.uwall
         Δρ = rhob * (self.expneguwall - 1) # initial guess
-        # Iterate to solve Δρ = ρb [exp(-Uext-Uself) - 1] where
-        # Uself = ∫ dz' Δρ(z') U(z'−z).  Use convolution from
-        # numpy to evaluate this integral.
         for i in range(max_iters):
             uself = dz * np.convolve(Δρ, ukernel, mode='same')
-            Δρ_new = rhob * (self.expneguwall*np.exp(-uself) - 1.0)
-            h0, h1 = [np.max(np.abs(a)) for a in [Δρ, Δρ_new]]
+            Δρ_new = rhob * (self.expneguwall*exp(-uself) - 1) # new guess
+            h0, h1 = [np.max(np.abs(x)) for x in [Δρ, Δρ_new]]
             α = alpha * h0 / (h1 + eps)
             Δρ_new = (1-α)*Δρ + α*Δρ_new # mixing rule
             ΔΔρ = Δρ - Δρ_new
@@ -126,7 +126,7 @@ class Wall:
             if int_abs_ΔΔρ < tol: # early escape if converged
                 break
             Δρ = Δρ_new
-        self.Δρ = Δρ # The density profile (should vanish inside the wall)
+        self.Δρ = Δρ # The density profile
         self.ρb = rhob # For use with wall tension calculation
         self.Abulk = Abulk # -- ditto --
         return i, int_abs_ΔΔρ # for monitoring
@@ -142,22 +142,20 @@ class Wall:
         return np.trapz(self.Δρ[self.domain], dx=self.dz)
 
     def abs_deviation(self):
-        return np.trapz(np.abs(self.Δρ[self.domain & ~(self.z<1)]), dx=self.dz)
+        bulk = ~(self.z<1) & ~(self.z > self.zmax - 1)
+        return np.trapz(np.abs(self.Δρ[bulk]), dx=self.dz)
 
     # Calculate the wall tension by first calculating the grand
-    # potential per unit area with a certain domain height Lz.
-    # The pressure is p = ρb + 1/2 ρb² ∫ dz U(z) and the grand
-    # potential is -Ω/A = ∫ dz ρ(z) + 1/2 ∫ dz dz' ρ(z) ρ(z')
-    # U(z-z').  The z-integration limits are 0 to ∞ (but in any
-    # case the density ρ(z) vanishes for z < 0).  The function
-    # U(z) is the integrated DPD potential (ukernel).  With these
-    # quantities the wall tension γ = p*Lz + Ω/A.
-
-    # (Alternatively the pressure is the negative of the grand
-    # potential density, p = -ω, in the homogeneous system.)  In
-    # the calculation below the contribution Lz*ρb is omitted from
-    # both the terms since it cancels in the expression for the
-    # wall tension.
+    # potential per unit area with a certain domain height Lz.  The
+    # pressure is p = ρb + 1/2 ρb² ∫ dz U(z) and the grand potential
+    # is Ω/A = - ∫ dz ρ(z) - 1/2 ∫ dz dz' ρ(z) ρ(z') U(z-z').  The
+    # z-integration limits are 0 to ∞ (= Lz) but in any case the
+    # density ρ(z) vanishes for z < 0.  The function U(z) is the
+    # integrated DPD potential (ukernel).  With these quantities the
+    # wall tension γ = Ω/A - ωb Lz where the bulk grand potential
+    # density ωb = - p, the negative pressure.  In the calculation
+    # below a contribution Lz ρb is omitted from both terms since it
+    # cancels in the final expression for the wall tension.
 
     def wall_tension(self):
         z, dz, domain = self.z, self.dz, self.domain
@@ -166,9 +164,8 @@ class Wall:
         ρρU = ρ * dz * np.convolve(ρ, ukernel, mode='same')
         ΩexbyA = - np.trapz(Δρ[domain], dx=dz) - 0.5 * np.trapz(ρρU[domain], dx=dz) # omitting Lz*ρb
         ωbex = - 0.5 * self.ρb**2 * np.trapz(ukernel, dx=dz) # same as np.conv, omitting Lz*ρb
-        ωb = ωbex - self.ρb # restoring the bulk piece
-        # Lz = np.trapz(np.ones_like(z[domain]), dx=dz) 
-        Lz = z[domain][-1] - z[domain][0] # equivalent to above
+        ωb = ωbex - self.ρb # restore the bulk piece for reporting purposes
+        Lz = z[domain][-1] - z[domain][0] # equiv to Lz = np.trapz(np.ones_like(z[domain]), dx=dz)
         γ = ΩexbyA - Lz*ωbex
         return γ, ωb, Lz
 
@@ -189,7 +186,7 @@ class Wall:
         print('Surface excess per unit area Γ/A = %g' % Γ)
         print('Wall tension γ = %g = %g mN.m' % (γ, γ * args.ktbyrc2))
 
-# Make the data output suitable for plotting in xmgrace if captured by redirection
+# Output dataframe suitable for plotting in xmgrace.  See
 # stackoverflow.com/questions/30833409/python-deleting-the-first-2-lines-of-a-string
 
 def df_header(df):
