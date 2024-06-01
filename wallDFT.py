@@ -53,11 +53,11 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
         return self.parser.parse_args(*args, **kwargs)
 
 def wall_args(args):
-    '''Return a dict of generic args that can be used as **wall_args(args)'''
+    '''Return a dict of args that can be used as **wall_args(args)'''
     return {'dz': args.dz, 'zmax': args.zmax}
 
 def solve_args(args):
-    '''Return a dict of generic args that can be used as **solve_args(args)'''
+    '''Return a dict of args that can be used as **solve_args(args)'''
     max_iters = eval(args.max_iters.replace('^', '**'))
     return {'max_iters': max_iters, 'alpha': args.alpha, 'tol': args.tolerance}
 
