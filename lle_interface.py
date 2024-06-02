@@ -69,22 +69,35 @@ parser.add_argument('-x', '--exclude', action='store_true', help='phase equilibr
 parser.add_argument('-o', '--output', help='output data for xmgrace, etc')
 args = parser.parse_args()
 
-dz = args.dz
-
 def integral(f): # convenient shorthand for numpy trapz 
     return np.trapz(f, dx=dz)
+
+def kernel_convolve(ρ): # wrapper around numpy convolve
+    return dz * np.convolve(ρ, kernel, mode='same')
 
 def length(z): # return the length of a z domain
     return z[-1] - z[0]
 
+def initial_density_profile(ρb): # step function
+    ρ = np.zeros_like(z)
+    ρ[z>0] = ρb[0]
+    ρ[z<0] = ρb[1]
+    ρ[z==0] = 0.5*(ρb[0] + ρb[1])
+    return ρ
+
+def clamp_density_profile(ρ, ρb): # outside domain
+    ρ[rh_bulk] = ρb[0]
+    ρ[lh_bulk] = ρb[1]
+    return ρ
+
 # Define a kernel K(z) in -1 < z < 1, and calculate the approximate
 # value of pi/15 as its integral.
 
-z = np.linspace(-1, 1, round(2/dz)+1, dtype=float)
+dz = args.dz
 
+z = np.linspace(-1, 1, round(2/dz)+1, dtype=float)
 kernel = π/12.0*(1-z)**3*(1+3*z)
 kernel[z<0] = np.flip(kernel[z>0])
-
 πby15 = integral(kernel)
 
 if args.verbose:
@@ -94,7 +107,7 @@ if args.verbose:
 ρ0 = args.rho
 A11, A12, A22 = eval(args.all) # returns a tuple
 
-p0 = ρ0 + 1/2*πby15*A11*ρ0**2 # reference pressure (NPT)
+p0 = ρ0 + 1/2 * πby15 * A11 * ρ0**2 # reference pressure (NPT)
 
 if args.verbose:
     print(f'ρ0, A11, A12, A22 = {ρ0} {A11} {A12} {A22}')
@@ -109,7 +122,7 @@ if args.verbose:
 
 def fun(y, p0, A11, A12, A22):
     x = 1 / (1 + exp(-y)) # convert to a pair of mole fractions
-    a = 1/2*πby15*(A11*x**2 + 2*A12*x*(1-x) + A22*(1-x)**2)
+    a = 1/2 * πby15 * (A11*x**2 + 2*A12*x*(1-x) + A22*(1-x)**2)
     ρ = (sqrt(1 + 4*a*p0) - 1) / (2*a) # impose NPT condition
     ρ1, ρ2 = x*ρ, (1-x)*ρ # the two mole fractions, at the two state points
     μ1 = ln(ρ1/ρ0) + πby15*(A11*ρ1 + A12*ρ2) # chemical potentials ..
@@ -129,12 +142,12 @@ if args.verbose > 2:
 if abs(xb[1]-xb[0]) < args.eps:
     raise ValueError(f'State points likely coalesced, x = {xb[0]}, {xb[1]}')
 
-a = 1/2*πby15*(A11*xb**2 + 2*A12*xb*(1-xb) + A22*(1-xb)**2)
+a = 1/2 * πby15 * (A11*xb**2 + 2*A12*xb*(1-xb) + A22*(1-xb)**2)
 ρb = (sqrt(1 + 4*a*p0) - 1) / (2*a) # a 2-vector containing the total densities
 ρ1b, ρ2b = xb*ρb, (1-xb)*ρb # these are 2-vectors containing the coexisting densities
-μ1 = ln(ρ1b/ρ0) + πby15*(A11*ρ1b + A12*ρ2b) # 2-vector, should be equal in coexistence
-μ2 = ln(ρ2b/ρ0) + πby15*(A12*ρ1b + A22*ρ2b) # -- ditto --
-p = ρb + 1/2*πby15*(A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
+μ1 = ln(ρ1b/ρ0) + πby15 * (A11*ρ1b + A12*ρ2b) # 2-vector, should be equal in coexistence
+μ2 = ln(ρ2b/ρ0) + πby15 * (A12*ρ1b + A22*ρ2b) # -- ditto --
+p = ρb + 1/2 * πby15 * (A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
 
 # Consensus 'bulk' values used in the calculations below
 
@@ -160,18 +173,6 @@ lh_bulk = (z < 1-zmax)
 rh_bulk = (z > zmax-1)
 domain = ~lh_bulk & ~rh_bulk
 
-def initial_density_profile(ρb):
-    ρ = np.zeros_like(z)
-    ρ[z>0] = ρb[0]
-    ρ[z<0] = ρb[1]
-    ρ[z==0] = 0.5*(ρb[0] + ρb[1])
-    return ρ
-
-def clamp_density_profile(ρ, ρb):
-    ρ[rh_bulk] = ρb[0]
-    ρ[lh_bulk] = ρb[1]
-    return ρ
-
 α = args.alpha
 tol = args.tolerance
 max_iters = eval(args.max_iters.replace('^', '**'))
@@ -183,9 +184,6 @@ max_iters = eval(args.max_iters.replace('^', '**'))
 # The integrals are evaluated as convolutions. Outside the domain
 # where the convolution is valid, the density profiles are clamped to
 # the bulk values.
-
-def kernel_convolve(ρ):
-    return dz * np.convolve(ρ, kernel, mode='same')
 
 for i in range(max_iters):
     ρ1_kern, ρ2_kern = map(kernel_convolve, [ρ1, ρ2])
