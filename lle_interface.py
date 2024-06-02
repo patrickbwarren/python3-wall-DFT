@@ -69,8 +69,8 @@ def integral(f): # convenient shorthand for numpy trapz
 def length(z): # return the length of a z domain
     return z[-1] - z[0]
 
-# define a kernel K(z) in -1 < z < 1, and calculate the approximate
-# value of pi/15.
+# Define a kernel K(z) in -1 < z < 1, and calculate the approximate
+# value of pi/15 as its integral.
 
 z = np.linspace(-1, 1, round(2/dz)+1, dtype=float)
 
@@ -132,7 +132,7 @@ if args.verbose > 1:
 
 μ1b, μ2b, pb = map(np.mean, [μ1, μ2, p]) # consensus 'bulk' values
 
-# create an array z in [-zmax, zmax] and a computational domain
+# Create an array z in [-zmax, zmax] and a computational domain
 # [-zmax+1, zmax-1] within which the convolution operation is valid.
 
 zmax = args.zmax
@@ -162,7 +162,7 @@ max_iters = eval(args.max_iters.replace('^', '**'))
 ρ2 = initial_density_profile(ρ2b)
 
 # Solve the following by Picard iteration :
-# ρ_i(z) = exp[ μ_i - ∑_j ∫ dz' ρ_j(z') U_ij(z-z') ]
+#  ρ_i(z) = exp[ μ_i - ∑_j ∫ dz' ρ_j(z') U_ij(z-z') ]
 # The integrals are evaluated as convolutions. Outside the domain
 # where the convolution is valid, the density profiles are clamped to
 # the bulk values.
@@ -195,8 +195,9 @@ x = ρ1 / ρ # local mole fraction
 
 Γ1, Γ2 = [integral(Δρ[domain]) for Δρ in [Δρ1, Δρ2]] # surface excesses
 
-# wall tension is γ = Ω/A + 2 p Lz where
-# Ω/A = - ∫ dz ∑_i [ ρ_i(z) + 1/2 ∑_j ∫ dz' ρ_i(z') U_ij(z-z') ]
+# The wall tension is γ = Ω/A + 2 p Lz where Ω/A = ∫ dz ω and
+#  ω = ∑_i [ - ρ_i(z) - 1/2 ∑_j ∫ dz' ρ_i(z) ρ_j(z') U_ij(z-z') ].
+# The inner integrals are evaluated using convolution again
 
 ρ1_kern, ρ2_kern = map(kernel_convolve, [ρ1, ρ2])
 ω1 = - ρ1 - 1/2 * ρ1 * (A11*ρ1_kern + A12*ρ2_kern)
@@ -235,7 +236,7 @@ elif args.show:
 #    plt.plot(z[region], Δρ2[region])
 #    plt.plot(z[region], ω1[region])
 #    plt.plot(z[region], ω2[region])
-#    plt.plot(z[region], ω[region] + p)
+#    plt.plot(z[region], ω[region] + pb)
 #    plt.plot(z[region], ρ[region])
 #    plt.plot(z[region], x[region])
 
