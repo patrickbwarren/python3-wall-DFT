@@ -71,7 +71,7 @@ unit area, and I define the latter as the integral of Δρ(*z*) outside
 the wall (*z* ≥ 0). The grand potential per unit area Ω / *A* = ∫ d*z*
 ω(*z*) where ω(z) = − ρ(*z*) − ½ ρ(*z*) ∫ d*z*' ρ(*z*')
 *U*(*z*−*z*').  The bulk grand potential per unit volume needed to
-calculate γ is ω<sub>b</sub> = −*p* where *p* = ρ<sub>b</sub> + ½
+calculate γ is ω<sub>b</sub> = − *p* where *p* = ρ<sub>b</sub> + ½
 ρ<sub>b</sub><sup>2</sup> ∫ d*z* *U*(*z*) is the bulk pressure.
 
 It follows from classical thermodynamics that dγ = − Γ dμ (Gibbs
