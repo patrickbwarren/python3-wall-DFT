@@ -69,9 +69,9 @@ if args.output:
 
     filtered = (np.mod(wall.idx, round(args.gridz/wall.dz)) == 0) # binary array
     plot_region = ~(wall.z < 0) & ~(wall.z > args.zcut) # another binary array
-    grid = plot_region & filtered # values to write out
-    df = pd.DataFrame(np.array([wall.z[grid], ρ[grid], wall.uwall[grid]]).transpose(),
-                      columns=['z', 'ρ', 'uwall'])
+    grid = plot_region & filtered # grid of positions to write out
+    data = np.array([wall.z[grid], ρ[grid], wall.uwall[grid]]).transpose()
+    df = pd.DataFrame(data, columns=['z', 'ρ', 'uwall'])
     with open(args.output, 'w') as f:
         print(df_to_agr(df), file=f)
     print('Data:', ', '.join(df_header(df)), 'written to', args.output)
