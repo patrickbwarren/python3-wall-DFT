@@ -57,7 +57,8 @@ parser.add_argument('-r', '--rho', default=3.0, type=float, help='baseline densi
 parser.add_argument('-a', '--all', default='25,30,20', help='A11, A12, A22, default 25, 30, 20')
 parser.add_argument('-g', '--guess', default='0.0001,0.99', help='initial guess x, default 0.0001, 0.99')
 parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
-parser.add_argument('-s', '--show', action='store_true', help='plot the density profile')
+parser.add_argument('-s', '--show', action='store_true', help='plot the density profiles')
+parser.add_argument('-t', '--thermodynamics', action='store_true', help='include thermodynamics in plot')
 parser.add_argument('-o', '--output', help='output data for xmgrace, etc')
 args = parser.parse_args()
 
@@ -91,6 +92,8 @@ p0 = ρ0 + 1/2*πby15*A11*ρ0**2 # reference pressure (NPT)
 if args.verbose:
     print(f'ρ0, A11, A12, A22 = {ρ0} {A11} {A12} {A22}')
     print(f'pressure fixed at p0 = {p0}')
+
+# First we must solve the coexistence problem.
 
 # Use y = ln(x/(1-x)) which inverts to x = 1/(1+exp(-y)).  Note the
 # function takes y as a 2-vector corresponding to the two state
@@ -127,10 +130,13 @@ a = 1/2*πby15*(A11*xb**2 + 2*A12*xb*(1-xb) + A22*(1-xb)**2)
 p = ρb + 1/2*πby15*(A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
 
 if args.verbose > 1:
-    for v in ['ρb', 'xb', 'ρ1b', 'ρ2b', 'μ1', 'μ2', 'pb']:
-        print(f'{v:>3} =', eval(v))
+    print('Coexistence problem solution')
+    for v in ['ρb', 'xb', 'ρ1b', 'ρ2b', 'μ1', 'μ2', 'p']:
+        print(f'{v:>5} =\t', '\t'.join(map(str, eval(v))))
 
-μ1b, μ2b, pb = map(np.mean, [μ1, μ2, p]) # consensus 'bulk' values
+# Consensus 'bulk' values used in the calculations below
+
+μ1b, μ2b, pb = map(np.mean, [μ1, μ2, p]) 
 
 # Create an array z in [-zmax, zmax] and a computational domain
 # [-zmax+1, zmax-1] within which the convolution operation is valid.
@@ -158,8 +164,7 @@ def clamp_density_profile(ρ, ρb):
 tol = args.tolerance
 max_iters = eval(args.max_iters.replace('^', '**'))
 
-ρ1 = initial_density_profile(ρ1b)
-ρ2 = initial_density_profile(ρ2b)
+ρ1, ρ2 = map(initial_density_profile, [ρ1b, ρ2b])
 
 # Solve the following by Picard iteration :
 #  ρ_i(z) = exp[ μ_i - ∑_j ∫ dz' ρ_j(z') U_ij(z-z') ]
@@ -230,14 +235,16 @@ elif args.show:
     import matplotlib.pyplot as plt
 
     region = ~(z<-args.zcut) & ~(z>args.zcut)
+
     plt.plot(z[region], ρ1[region])
     plt.plot(z[region], ρ2[region])
-#    plt.plot(z[region], Δρ1[region])
-#    plt.plot(z[region], Δρ2[region])
-    plt.plot(z[region], negω1[region])
-    plt.plot(z[region], negω2[region])
-    plt.plot(z[region], pb - negω[region])
-#    plt.plot(z[region], ρ[region])
-#    plt.plot(z[region], x[region])
+    #plt.plot(z[region], Δρ1[region])
+    #plt.plot(z[region], Δρ2[region])
+    if args.thermodynamics:
+        plt.plot(z[region], negω1[region])
+        plt.plot(z[region], negω2[region])
+        plt.plot(z[region], pb - negω[region])
+    #plt.plot(z[region], ρ[region])
+    #plt.plot(z[region], x[region])
 
     plt.show()
