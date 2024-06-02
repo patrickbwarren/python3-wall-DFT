@@ -67,6 +67,18 @@ def truncate_to_zero(a, z):
     b[z < 0] = 0.0
     return b
 
+def length(z):
+    '''Return the length of a domain in z'''
+    return z[-1] - z[0]
+
+def convolve(f, g, dz):
+    '''wrapper for numpy convolve'''
+    return dz * np.convolve(f, g, mode='same')
+
+def integral(f, dz):
+    '''wrapper for numpy trapz'''
+    return np.trapz(f, dx=dz)
+
 class Wall:
 
     # Define the kernel U(z) on the domain -1 < z < 1.  The function
@@ -87,6 +99,7 @@ class Wall:
         z = np.linspace(-1.0, 1.0, round(2.0/self.dz)+1, dtype=float)
         self.kernel = π/12.0*(1-z)**3*(1+3*z)
         self.kernel[z<0] = np.flip(self.kernel[z>0])
+        self.πby15 = integral(self.kernel, dz)
         self.about = 'Wall: zmax, dz, nz = %g, %g, %i' % (self.zmax, self.dz, len(self.z))
 
     def standard_wall(self, Awall):
@@ -106,23 +119,23 @@ class Wall:
         self.model = f'Continuum wall: Awall*rhow = {Awall_rhow}'
 
     def curly_ell(self): # available after the wall potential is set
-        return np.trapz((self.expneguwall[self.domain] - 1), dx=self.dz)
+        return integral((self.expneguwall[self.domain] - 1), self.dz)
 
     # Here solve Δρ = ρb [exp(-Uwall-Uself) - 1] iteratively, where
     # Uself = ∫ dz' Δρ(z') U(z'−z) uses convolution from numpy.
 
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10, eps=1e-10):
         z, dz = self.z, self.dz
-        ukernel, expneguwall = (Abulk * self.kernel), self.expneguwall
+        ukernel, expneguwall = Abulk*self.kernel, self.expneguwall
         Δρ = rhob * (expneguwall - 1) # initial guess
         for i in range(max_iters):
-            uself = dz * np.convolve(Δρ, ukernel, mode='same')
+            uself = convolve(Δρ, ukernel, dz)
             Δρ_new = rhob * (expneguwall*exp(-uself) - 1) # new guess
             h0, h1 = [np.max(np.abs(x)) for x in [Δρ, Δρ_new]]
             α = alpha * h0 / (h1 + eps)
             Δρ_new = (1-α)*Δρ + α*Δρ_new # mixing rule
             ΔΔρ = Δρ - Δρ_new
-            int_abs_ΔΔρ = np.trapz(np.abs(ΔΔρ), dx=dz)
+            int_abs_ΔΔρ = integral(np.abs(ΔΔρ), dz)
             if int_abs_ΔΔρ < tol: # early escape if converged
                 break
             Δρ = Δρ_new
@@ -139,35 +152,31 @@ class Wall:
     # as ∫ dz |Δρ(z)| where the integration limits are 1 to ∞.
 
     def surface_excess(self):
-        return np.trapz(self.Δρ[self.domain], dx=self.dz)
+        return integral(self.Δρ[self.domain], self.dz)
 
     def abs_deviation(self):
         bulk = self.domain & ~(self.z<1) # z = 1 to Lz
-        return np.trapz(np.abs(self.Δρ[bulk]), dx=self.dz)
+        return integral(np.abs(self.Δρ[bulk]), self.dz)
 
     # Calculate the wall tension by first calculating the grand
-    # potential per unit area with a certain domain height Lz.  The
-    # pressure is p = ρb + 1/2 ρb² ∫ dz U(z) and the grand potential
-    # is Ω/A = - ∫ dz ρ(z) - 1/2 ∫ dz dz' ρ(z) ρ(z') U(z-z').  The
+    # potential per unit area given by Ω/A = ∫ dz ω(z) where the
+    # density ω(z) = - ρ(z) - 1/2 ρ(z) ∫ dz' ρ(z') U(z-z').  The
     # z-integration limits are 0 to ∞ (= Lz) but in any case the
     # density ρ(z) vanishes for z < 0.  The function U(z) is the
-    # integrated DPD potential (ukernel).  With these quantities the
-    # wall tension γ = Ω/A - ωb Lz where the bulk grand potential
-    # density ωb = - p, the negative pressure.  In the calculation
-    # below a contribution Lz ρb is omitted from both terms since it
-    # cancels in the final expression for the wall tension.
+    # integrated DPD potential (ukernel).  The corresponding pressure
+    # (negative ω in bulk) is p = ρb + 1/2 ρb² ∫ dz U(z).  With these
+    # quantities the wall tension γ = Ω/A + p Lz.
 
     def wall_tension(self):
         z, dz, domain = self.z, self.dz, self.domain
-        ukernel, Δρ = (self.Abulk * self.kernel), self.Δρ
+        ukernel, Δρ, ρb = self.Abulk*self.kernel, self.Δρ, self.ρb
         ρ = truncate_to_zero(self.ρb + Δρ, z)
-        ρρU = ρ * dz * np.convolve(ρ, ukernel, mode='same')
-        ΩexbyA = - np.trapz(Δρ[domain], dx=dz) - 0.5 * np.trapz(ρρU[domain], dx=dz) # omitting Lz*ρb
-        ωbex = - 0.5 * self.ρb**2 * np.trapz(ukernel, dx=dz) # same as np.conv, omitting Lz*ρb
-        ωb = ωbex - self.ρb # restore the bulk piece for reporting purposes
-        Lz = z[domain][-1] - z[domain][0] # equiv to Lz = np.trapz(np.ones_like(z[domain]), dx=dz)
-        γ = ΩexbyA - Lz*ωbex
-        return γ, ωb, Lz
+        negω = ρ + 1/2 * ρ * convolve(ρ, ukernel, dz)
+        negΩbyA = integral(negω[domain], dz)
+        p = ρb + 1/2 * ρb**2 * integral(ukernel, dz)
+        Lz = length(z[domain]) # equiv to integral(np.ones_like(z[domain]), dz)
+        γ = p*Lz - negΩbyA
+        return γ, p, Lz
 
     def solve_and_print(self, Awall, rhow, Abulk, rhob, args):
         self.continuum_wall(Awall*rhow) if args.continuum else self.standard_wall(Awall)
@@ -175,12 +184,12 @@ class Wall:
         Γ = self.surface_excess()
         w = self.abs_deviation()
         γ, ωb, Lz = self.wall_tension()
-        p_mf = rhob + π/30 * Abulk * rhob**2
+        p = rhob + 1/2 * self.πby15 * Abulk * rhob**2
         print(self.model)
         print('Converged after %i iterations, ∫dz|ΔΔρ| = %g' % (iters, conv))
         print('Awall, ρw, Abulk, ρb = %g, %g, %g, %g' % (Awall, rhow, Abulk, rhob))
         print('Bulk grand potential ωb = %g' % ωb)
-        print('Bulk mean field pressure, p = %g' % p_mf)
+        print('Bulk pressure, p = %g' % p)
         print('Domain size Lz = %g' % Lz)
         print('Abs deviation in bulk = %g' % w)
         print('Surface excess per unit area Γ/A = %g' % Γ)

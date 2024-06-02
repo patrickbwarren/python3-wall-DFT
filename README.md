@@ -33,9 +33,9 @@ functional free energy for this system is
 * ∫ ρ(**r**) [ln ρ(**r**) − 1] + ∫ ρ(**r**) *U*<sub>ext</sub>(**r**) +
   1/2 ∫ ρ(**r**) ρ(**r**') U(|**r**−**r**'|) .
   
-If we consider the case where *U*<sub>ext</sub> = *U*<sub>wall</sub>
-represents a wall in the plane normal to the *z*-direction, then this
-reduces to
+If we consider the case where *U*<sub>ext</sub>(**r**) =
+*U*<sub>wall</sub>(*z*) represents a wall in the plane normal to the
+*z*-direction, then this reduces to
 
 * ∫ ρ(*z*) [ln ρ(*z*) − 1] + ∫ ρ(*z*) *U*<sub>wall</sub>(*z*) + 1/2 ∫
   ρ(*z*) ρ(*z*') *U*(*z*−*z*') ,
@@ -58,7 +58,7 @@ self-consistently, and this is what the code in this repository
 does. As input, one needs to specify the bulk density and the two
 potential functions *U*(*z*) and *U*<sub>wall</sub>(*z*).  The method
 is to start with the initial guess ρ(*z*) = ρ<sub>b</sub> exp[ −
-*U*<sub>w</sub>(*z*) ], and iterate the above, mixing in a fraction of
+*U*<sub>wall</sub>(*z*) ], and iterate the above, mixing in a fraction of
 the new solution at each iteration step to assure convergence (Picard
 method).  The integral in the exponential here can be evaluated as a
 convolution, using a standard numerical library routine.
@@ -68,7 +68,13 @@ convolution, using a standard numerical library routine.
 Given a solution ρ(*z*), one can compute the wall tension γ and the
 surface excess Γ. The former is just the excess grand potential per
 unit area, and I define the latter as the integral of Δρ(*z*) outside
-the wall (*z* ≥ 0).  The bulk grand potential per unit volume needed
+the wall (*z* ≥ 0). The grand potential per unit area is
+
+* Ω / *A* = − ∫ d*z* ρ(*z*) − 1/2 ∫ d*z* d*z*' ρ(*z*) ρ(*z*') *U*(*z*−*z*')
+
+
+
+The bulk grand potential per unit volume needed
 to calculate γ is just Ω / V = −*p* where, to the same level of
 approximation as the mean-field DFT, the pressure *p* =
 ρ<sub>b</sub> + 1/2 ρ<sub>b</sub><sup>2</sup> ∫ d<sup>3</sup>**r**

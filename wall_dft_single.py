@@ -35,7 +35,6 @@
 #  Surface excess per unit area Γ/A = 0.447014
 #  Wall tension γ = -1.62926 = -21.0631 mN.m
 
-
 import wallDFT
 from wallDFT import wall_args, df_header, df_to_agr
 
