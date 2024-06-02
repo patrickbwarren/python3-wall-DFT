@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Experimental code for liquid-liquid phase equilibria.
+# Experimental code for density profiles in liquid-liquid phase
+# equilibria using a DPD mean-field DFT.
 
 # This code is copyright (c) 2024 Patrick B Warren (STFC).
 # Email: patrick.warren{at}stfc.ac.uk.
@@ -20,24 +21,20 @@
 # along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-# Solve for liquid-liquid coexistence in a DPD binary mixture
+# First, solve for liquid-liquid coexistence in a DPD binary mixture
 # described by mean-field free energy f = fid + fex where
-# fid = ρ1 (ln(ρ1/ρ0) - 1) + ρ2 (ln(ρ2/ρ0) - 1),
-# fex = π/30 (A11 ρ1² + 2 A12 ρ1 ρ2 + A22 ρ2²).
+#  fid = ρ1 (ln(ρ1/ρ0) - 1) + ρ2 (ln(ρ2/ρ0) - 1),
+#  fex = π/30 (A11 ρ1² + 2 A12 ρ1 ρ2 + A22 ρ2²).
 # The corresponding chemical potentials are (standard state is ρ0):
-# μ1 = ln(ρ1/ρ0) + π/15*(A11*ρ1 + A12*ρ2),
-# μ2 = ln(ρ2/ρ0) + π/15*(A12*ρ1 + A22*ρ2),
+#  μ1 = ln(ρ1/ρ0) + π/15*(A11*ρ1 + A12*ρ2),
+#  μ2 = ln(ρ2/ρ0) + π/15*(A12*ρ1 + A22*ρ2),
 # and pressure p = ρ + π/30*(A11*ρ1**2 + 2*A12*ρ1*ρ2 + A22*ρ2**2),
 # where ρ = ρ1 + ρ2.  Some tweaking of the initial guess may be needed
 # to encourage the solver to find distinct coexisting state points.
 
 # To impose NPT we solve a quadratic equation for ρ which is
-# π/30 [A11 x² + 2 A12 x(1-x) + A22 (1-x)²] ρ² + ρ - p0 = 0,
+#  π/30 [A11 x² + 2 A12 x(1-x) + A22 (1-x)²] ρ² + ρ - p0 = 0,
 # on writing the pressure in terms of ρ1, ρ2 = xρ, (1-x)ρ.
-
-# Coexisting state initial guesses:
-# -a 25,35,25 -g 0.0001,0.99
-# -a 25,35,20 -g 0.0001,0.99
 
 import argparse
 import numpy as np
@@ -51,49 +48,62 @@ parser = argparse.ArgumentParser(description='experimental DPD LLE profiles')
 parser.add_argument('--max-iters', default='10^3', help='max number of iterations, default 10^3')
 parser.add_argument('--tolerance', default='1e-10', type=float, help='convergence tol, default 1e-10')
 parser.add_argument('--alpha', default=0.1, type=float, help='mixing fraction, default 0.1')
-parser.add_argument('--zmax', default=7.0, type=float, help='maximum distance in z, default 7.0')
+parser.add_argument('--zmax', default=6.0, type=float, help='maximum distance in z, default 6.0')
 parser.add_argument('--dz', default=1e-3, type=float, help='spacing in z, default 1e-3')
-parser.add_argument('-r', '--rho', default=3.0, type=float, help='baseline density, default 3.0')
-parser.add_argument('-a', '--allA', default='25,30,20', help='A11, A12, A22, default 25, 30, 20')
-parser.add_argument('-g', '--guess', default='0.0001,0.99', help='initial guess x, default 0.01, 0.9')
-parser.add_argument('--eps', default=1e-6, type=float, help='tolerance to declare coexistence')
-parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 parser.add_argument('--zcut', default=3.0, type=float, help='cut-off in z, default 3.0')
 parser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
+parser.add_argument('-e', '--eps', default=1e-6, type=float, help='tolerance to declare coexistence')
+parser.add_argument('-r', '--rho', default=3.0, type=float, help='baseline density, default 3.0')
+parser.add_argument('-a', '--all', default='25,30,20', help='A11, A12, A22, default 25, 30, 20')
+parser.add_argument('-g', '--guess', default='0.0001,0.99', help='initial guess x, default 0.0001, 0.99')
+parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 parser.add_argument('-s', '--show', action='store_true', help='plot the density profile')
 parser.add_argument('-o', '--output', help='output data for xmgrace, etc')
 args = parser.parse_args()
 
-# define a kernel K(z) in -1 < z < 1, and calculate the approximate value of pi/15
-
 dz = args.dz
-z = np.linspace(-1.0, 1.0, round(2.0/dz)+1, dtype=float)
+
+def integral(f): # convenient shorthand for numpy trapz 
+    return np.trapz(f, dx=dz)
+
+def length(z): # return the length of a z domain
+    return z[-1] - z[0]
+
+# define a kernel K(z) in -1 < z < 1, and calculate the approximate
+# value of pi/15.
+
+z = np.linspace(-1, 1, round(2/dz)+1, dtype=float)
 
 kernel = π/12.0*(1-z)**3*(1+3*z)
 kernel[z<0] = np.flip(kernel[z>0])
-πby15 = np.trapz(kernel, dx=dz)
+
+πby15 = integral(kernel)
 
 if args.verbose:
     print(f'integrated kernel =\t{πby15}')
     print(f'exact result π/15 =\t{π/15}')
 
 ρ0 = args.rho
-A11, A12, A22 = eval(args.allA) # returns a tuple
-p0 = ρ0 + 1/2*πby15*A11*ρ0**2
+A11, A12, A22 = eval(args.all) # returns a tuple
+
+p0 = ρ0 + 1/2*πby15*A11*ρ0**2 # reference pressure (NPT)
 
 if args.verbose:
     print(f'ρ0, A11, A12, A22 = {ρ0} {A11} {A12} {A22}')
     print(f'pressure fixed at p0 = {p0}')
 
-# Use y = ln(x/(1-x)) which inverts to x = 1/(1+exp(-y)).
+# Use y = ln(x/(1-x)) which inverts to x = 1/(1+exp(-y)).  Note the
+# function takes y as a 2-vector corresponding to the two state
+# points, and returns the difference in the chemical potentials of the
+# two components between two state points.
 
 def fun(y, p0, A11, A12, A22):
-    x = 1 / (1 + exp(-y))
+    x = 1 / (1 + exp(-y)) # convert to a pair of mole fractions
     a = 1/2*πby15*(A11*x**2 + 2*A12*x*(1-x) + A22*(1-x)**2)
-    ρ = (sqrt(1 + 4*a*p0) - 1) / (2*a)
-    ρ1, ρ2 = x*ρ, (1-x)*ρ
-    μ1 = ln(ρ1/ρ0) + πby15*(A11*ρ1 + A12*ρ2)
-    μ2 = ln(ρ2/ρ0) + πby15*(A12*ρ1 + A22*ρ2)
+    ρ = (sqrt(1 + 4*a*p0) - 1) / (2*a) # impose NPT condition
+    ρ1, ρ2 = x*ρ, (1-x)*ρ # the two mole fractions, at the two state points
+    μ1 = ln(ρ1/ρ0) + πby15*(A11*ρ1 + A12*ρ2) # chemical potentials ..
+    μ2 = ln(ρ2/ρ0) + πby15*(A12*ρ1 + A22*ρ2) # .. at the two state points
     return [μ1[1] - μ1[0], μ2[1] - μ2[0]]
 
 x0 = np.array(eval(f'[{args.guess}]')) # mole fractions in the two phases (initial guess)
@@ -102,7 +112,7 @@ soln = root(fun, y0, args=(p0, A11, A12, A22))
 yb = soln.x
 xb = 1 / (1 + exp(-yb)) # final mole fractions in the two phases (a 2-vector)
 
-if args.verbose > 1:
+if args.verbose > 2:
     print('Initial guess =', x0)
     print(soln)
 
@@ -114,23 +124,22 @@ a = 1/2*πby15*(A11*xb**2 + 2*A12*xb*(1-xb) + A22*(1-xb)**2)
 ρ1b, ρ2b = xb*ρb, (1-xb)*ρb # these are 2-vectors containing the coexisting densities
 μ1 = ln(ρ1b/ρ0) + πby15*(A11*ρ1b + A12*ρ2b) # 2-vector, should be equal in coexistence
 μ2 = ln(ρ2b/ρ0) + πby15*(A12*ρ1b + A22*ρ2b) # -- ditto --
-pb = ρb + 1/2*πby15*(A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
+p = ρb + 1/2*πby15*(A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
 
-if args.verbose:
+if args.verbose > 1:
     for v in ['ρb', 'xb', 'ρ1b', 'ρ2b', 'μ1', 'μ2', 'pb']:
         print(f'{v:>3} =', eval(v))
 
-μ1b, μ2b = [np.mean(μ) for μ in [μ1, μ2]] # consensus 'bulk' values
+μ1b, μ2b, pb = map(np.mean, [μ1, μ2, p]) # consensus 'bulk' values
 
 # create an array z in [-zmax, zmax] and a computational domain
 # [-zmax+1, zmax-1] within which the convolution operation is valid.
 
 zmax = args.zmax
-Lz = zmax - 1
 z = np.linspace(-zmax, zmax, round(2*zmax/dz)+1, dtype=float)
 idx = np.round(z/dz).astype(int) # index with origin z = 0.0 --> 0
-lh_bulk = (z < -Lz)
-rh_bulk = (z > Lz)
+lh_bulk = (z < 1-zmax)
+rh_bulk = (z > zmax-1)
 domain = ~lh_bulk & ~rh_bulk
 
 def initial_density_profile(ρb):
@@ -158,20 +167,47 @@ max_iters = eval(args.max_iters.replace('^', '**'))
 # where the convolution is valid, the density profiles are clamped to
 # the bulk values.
 
+def kernel_convolve(ρ):
+    return dz * np.convolve(ρ, kernel, mode='same')
+
 for i in range(max_iters):
-    ρ1_kern = dz * np.convolve(ρ1, kernel, mode='same')
-    ρ2_kern = dz * np.convolve(ρ2, kernel, mode='same')
+    ρ1_kern, ρ2_kern = map(kernel_convolve, [ρ1, ρ2])
     ρ1_new = clamp_density_profile(ρ0*exp(μ1b - A11*ρ1_kern - A12*ρ2_kern), ρ1b)
     ρ2_new = clamp_density_profile(ρ0*exp(μ2b - A12*ρ1_kern - A22*ρ2_kern), ρ2b)
     ρ1 = (1-α)*ρ1 + α*ρ1_new
     ρ2 = (1-α)*ρ2 + α*ρ2_new
-    int_abs_Δρ1 = np.trapz(np.abs(ρ1_new-ρ1), dx=dz)
-    int_abs_Δρ2 = np.trapz(np.abs(ρ2_new-ρ2), dx=dz)
-    if int_abs_Δρ1 + int_abs_Δρ2 < tol: # early escape if converged
+    int_abs_Δρ1 = integral(np.abs(ρ1_new - ρ1))
+    int_abs_Δρ2 = integral(np.abs(ρ2_new - ρ2))
+    conv = int_abs_Δρ1 + int_abs_Δρ2
+    if conv < tol: # early escape if converged
         break
+else:
+    raise ValueError(f'Picard failed to converge after {i} iterations, conv = {conv}')
+
+if args.verbose:
+    print(f'Picard converged after {i} iterations, conv = {conv}')
 
 ρ = ρ1 + ρ2 # total density
 x = ρ1 / ρ # local mole fraction
+
+Δρ1 = ρ1 - initial_density_profile(ρ1b)
+Δρ2 = ρ2 - initial_density_profile(ρ2b)
+
+Γ1, Γ2 = [integral(Δρ[domain]) for Δρ in [Δρ1, Δρ2]] # surface excesses
+
+# wall tension is γ = Ω/A + 2 p Lz where
+# Ω/A = - ∫ dz ∑_i [ ρ_i(z) + 1/2 ∑_j ∫ dz' ρ_i(z') U_ij(z-z') ]
+
+ρ1_kern, ρ2_kern = map(kernel_convolve, [ρ1, ρ2])
+ω1 = - ρ1 - 1/2 * ρ1 * (A11*ρ1_kern + A12*ρ2_kern)
+ω2 = - ρ2 - 1/2 * ρ2 * (A12*ρ1_kern + A22*ρ2_kern)
+ω = ω1 + ω2
+ΩbyA = integral(ω[domain])
+twoLz = length(z[domain])
+γ = ΩbyA + pb*twoLz
+
+vs = ['twoLz', 'Γ1', 'Γ2', 'γ'] 
+print(', '.join(vs), '\t', '\t'.join([str(eval(v)) for v in vs]))
 
 if args.output:
 
@@ -195,7 +231,12 @@ elif args.show:
     region = ~(z<-args.zcut) & ~(z>args.zcut)
     plt.plot(z[region], ρ1[region])
     plt.plot(z[region], ρ2[region])
-    plt.plot(z[region], ρ[region])
-    plt.plot(z[region], x[region])
+#    plt.plot(z[region], Δρ1[region])
+#    plt.plot(z[region], Δρ2[region])
+#    plt.plot(z[region], ω1[region])
+#    plt.plot(z[region], ω2[region])
+#    plt.plot(z[region], ω[region] + p)
+#    plt.plot(z[region], ρ[region])
+#    plt.plot(z[region], x[region])
 
     plt.show()
