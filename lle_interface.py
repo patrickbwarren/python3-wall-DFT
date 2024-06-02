@@ -36,6 +36,11 @@
 #  π/30 [A11 x² + 2 A12 x(1-x) + A22 (1-x)²] ρ² + ρ - p0 = 0,
 # on writing the pressure in terms of ρ1, ρ2 = xρ, (1-x)ρ.
 
+# Benchmarks: -a 25,30,20 (default) ; -a 25,50,25 ; -a 25,50,20 --tol=1e-9
+# Γ1, Γ2, γ = -0.1060648627316102   -0.1111889714951698   1.3385683713932508
+# Γ1, Γ2, γ = -0.20759700220097246  -0.20759700212922425  3.676873998304302
+# Γ1, Γ2, γ = -0.2326749744700184   -0.2600528420615002   4.183680028074775
+
 import argparse
 import numpy as np
 from numpy import pi as π
@@ -52,6 +57,7 @@ parser.add_argument('--zmax', default=6.0, type=float, help='maximum distance in
 parser.add_argument('--dz', default=1e-3, type=float, help='spacing in z, default 1e-3')
 parser.add_argument('--zcut', default=3.0, type=float, help='cut-off in z, default 3.0')
 parser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
+parser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
 parser.add_argument('-e', '--eps', default=1e-6, type=float, help='tolerance to declare coexistence')
 parser.add_argument('-r', '--rho', default=3.0, type=float, help='baseline density, default 3.0')
 parser.add_argument('-a', '--all', default='25,30,20', help='A11, A12, A22, default 25, 30, 20')
@@ -150,14 +156,14 @@ domain = ~lh_bulk & ~rh_bulk
 
 def initial_density_profile(ρb):
     ρ = np.zeros_like(z)
-    ρ[z<0] = ρb[0]
-    ρ[z>0] = ρb[1]
+    ρ[z>0] = ρb[0]
+    ρ[z<0] = ρb[1]
     ρ[z==0] = 0.5*(ρb[0] + ρb[1])
     return ρ
 
 def clamp_density_profile(ρ, ρb):
-    ρ[lh_bulk] = ρb[0]
-    ρ[rh_bulk] = ρb[1]
+    ρ[rh_bulk] = ρb[0]
+    ρ[lh_bulk] = ρb[1]
     return ρ
 
 α = args.alpha
@@ -213,7 +219,7 @@ twoLz = length(z[domain])
 γ = pb*twoLz - negΩbyA
 
 vs = ['twoLz', 'Γ1', 'Γ2', 'γ'] 
-print(', '.join(vs), '\t', '\t'.join([str(eval(v)) for v in vs]))
+print(', '.join(vs), '(mN.m)\t', '\t'.join([str(eval(v)) for v in vs]), '\t', γ*args.ktbyrc2)
 
 if args.output:
 
