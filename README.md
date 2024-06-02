@@ -31,13 +31,13 @@ external potential *U*<sub>ext</sub>(**r**). A mean-field density
 functional free energy for this system is
 
 * ∫ ρ(**r**) [ln ρ(**r**) − 1] + ∫ ρ(**r**) *U*<sub>ext</sub>(**r**) +
-  1/2 ∫ ρ(**r**) ρ(**r**') U(|**r**−**r**'|) .
+  ½ ∫ ρ(**r**) ρ(**r**') U(|**r**−**r**'|) .
   
 If we consider the case where *U*<sub>ext</sub>(**r**) =
 *U*<sub>wall</sub>(*z*) represents a wall in the plane normal to the
 *z*-direction, then this reduces to
 
-* ∫ ρ(*z*) [ln ρ(*z*) − 1] + ∫ ρ(*z*) *U*<sub>wall</sub>(*z*) + 1/2 ∫
+* ∫ ρ(*z*) [ln ρ(*z*) − 1] + ∫ ρ(*z*) *U*<sub>wall</sub>(*z*) + ½ ∫
   ρ(*z*) ρ(*z*') *U*(*z*−*z*') ,
 
 where *U*(*z*) is a partial integral of *U*(**r**) corresponding to
@@ -69,9 +69,9 @@ Given a solution ρ(*z*), one can compute the wall tension γ and the
 surface excess Γ. The former is just the excess grand potential per
 unit area, and I define the latter as the integral of Δρ(*z*) outside
 the wall (*z* ≥ 0). The grand potential per unit area Ω / *A* = ∫ d*z*
-ω(*z*) where ω(z) = − ρ(*z*) − 1/2 ρ(*z*) ∫ d*z*' ρ(*z*')
+ω(*z*) where ω(z) = − ρ(*z*) − ½ ρ(*z*) ∫ d*z*' ρ(*z*')
 *U*(*z*−*z*').  The bulk grand potential per unit volume needed to
-calculate γ is ω<sub>b</sub> = −*p* where *p* = ρ<sub>b</sub> + 1/2
+calculate γ is ω<sub>b</sub> = −*p* where *p* = ρ<sub>b</sub> + ½
 ρ<sub>b</sub><sup>2</sup> ∫ d*z* *U*(*z*) is the bulk pressure.
 
 It follows from classical thermodynamics that dγ = − Γ dμ (Gibbs
