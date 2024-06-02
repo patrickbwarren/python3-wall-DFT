@@ -65,6 +65,7 @@ parser.add_argument('-g', '--guess', default='0.0001,0.99', help='initial guess 
 parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 parser.add_argument('-s', '--show', action='store_true', help='plot the density profiles')
 parser.add_argument('-t', '--thermodynamics', action='store_true', help='include thermodynamics in plot')
+parser.add_argument('-x', '--exclude', action='store_true', help='phase equilibria only')
 parser.add_argument('-o', '--output', help='output data for xmgrace, etc')
 args = parser.parse_args()
 
@@ -135,7 +136,7 @@ a = 1/2*πby15*(A11*xb**2 + 2*A12*xb*(1-xb) + A22*(1-xb)**2)
 μ2 = ln(ρ2b/ρ0) + πby15*(A12*ρ1b + A22*ρ2b) # -- ditto --
 p = ρb + 1/2*πby15*(A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
 
-if args.verbose > 1:
+if args.verbose > 1 or args.exclude:
     print('Coexistence problem solution')
     for v in ['ρb', 'xb', 'ρ1b', 'ρ2b', 'μ1', 'μ2', 'p']:
         print(f'{v:>5} =\t', '\t'.join(map(str, eval(v))))
@@ -143,6 +144,11 @@ if args.verbose > 1:
 # Consensus 'bulk' values used in the calculations below
 
 μ1b, μ2b, pb = map(np.mean, [μ1, μ2, p]) 
+
+if args.exclude:
+    for v in ['μ1b', 'μ2b', 'pb']:
+        print(f'{v:>5} =\t', eval(v), '\t(consensus)')
+    exit()
 
 # Create an array z in [-zmax, zmax] and a computational domain
 # [-zmax+1, zmax-1] within which the convolution operation is valid.
