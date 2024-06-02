@@ -196,16 +196,16 @@ x = ρ1 / ρ # local mole fraction
 Γ1, Γ2 = [integral(Δρ[domain]) for Δρ in [Δρ1, Δρ2]] # surface excesses
 
 # The wall tension is γ = Ω/A + 2 p Lz where Ω/A = ∫ dz ω and
-#  ω = ∑_i [ - ρ_i(z) - 1/2 ∑_j ∫ dz' ρ_i(z) ρ_j(z') U_ij(z-z') ].
+#  ω = - ∑_i [ ρ_i(z) + 1/2 ∑_j ∫ dz' ρ_i(z) ρ_j(z') U_ij(z-z') ].
 # The inner integrals are evaluated using convolution again
 
 ρ1_kern, ρ2_kern = map(kernel_convolve, [ρ1, ρ2])
-ω1 = - ρ1 - 1/2 * ρ1 * (A11*ρ1_kern + A12*ρ2_kern)
-ω2 = - ρ2 - 1/2 * ρ2 * (A12*ρ1_kern + A22*ρ2_kern)
-ω = ω1 + ω2
-ΩbyA = integral(ω[domain])
+negω1 = ρ1 + 1/2 * ρ1 * (A11*ρ1_kern + A12*ρ2_kern)
+negω2 = ρ2 + 1/2 * ρ2 * (A12*ρ1_kern + A22*ρ2_kern)
+negω = negω1 + negω2
+negΩbyA = integral(negω[domain])
 twoLz = length(z[domain])
-γ = ΩbyA + pb*twoLz
+γ = pb*twoLz - negΩbyA
 
 vs = ['twoLz', 'Γ1', 'Γ2', 'γ'] 
 print(', '.join(vs), '\t', '\t'.join([str(eval(v)) for v in vs]))
@@ -219,8 +219,8 @@ if args.output:
 
     filtered = (np.mod(idx, round(args.gridz/dz)) == 0) # binary array
     grid = domain & filtered # values to write out
-    data = np.array([z[grid], ρ1[grid], ρ2[grid], ρ[grid], x[grid]]).transpose()
-    df = pd.DataFrame(data, columns=['z', 'ρ1', 'ρ2', 'ρ', 'x'])
+    data = np.array([z[grid], ρ1[grid], ρ2[grid], ρ[grid], x[grid], negω1[grid], negω2[grid], negω[grid]])
+    df = pd.DataFrame(data.transpose(), columns=['z', 'ρ1', 'ρ2', 'ρ', 'x', 'negω1', 'negω2', 'negω'])
     with open(args.output, 'w') as f:
         print(df_to_agr(df), file=f)
     print('Data:', ', '.join(df_header(df)), 'written to', args.output)
@@ -234,9 +234,9 @@ elif args.show:
     plt.plot(z[region], ρ2[region])
 #    plt.plot(z[region], Δρ1[region])
 #    plt.plot(z[region], Δρ2[region])
-#    plt.plot(z[region], ω1[region])
-#    plt.plot(z[region], ω2[region])
-#    plt.plot(z[region], ω[region] + pb)
+    plt.plot(z[region], negω1[region])
+    plt.plot(z[region], negω2[region])
+    plt.plot(z[region], pb - negω[region])
 #    plt.plot(z[region], ρ[region])
 #    plt.plot(z[region], x[region])
 
