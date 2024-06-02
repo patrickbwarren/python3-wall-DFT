@@ -22,11 +22,11 @@
 
 # Solve for liquid-liquid coexistence in a DPD binary mixture
 # described by mean-field free energy f = fid + fex where
-# fid = ρ1 (ln ρ1 - 1) + ρ2 (ln ρ2 - 1),
+# fid = ρ1 (ln(ρ1/ρ0) - 1) + ρ2 (ln(ρ2/ρ0) - 1),
 # fex = π/30 (A11 ρ1² + 2 A12 ρ1 ρ2 + A22 ρ2²).
-# The corresponding chemical potentials are:
-# μ1 = ln(ρ1) + π/15*(A11*ρ1 + A12*ρ2),
-# μ2 = ln(ρ2) + π/15*(A12*ρ1 + A22*ρ2),
+# The corresponding chemical potentials are (standard state is ρ0):
+# μ1 = ln(ρ1/ρ0) + π/15*(A11*ρ1 + A12*ρ2),
+# μ2 = ln(ρ2/ρ0) + π/15*(A12*ρ1 + A22*ρ2),
 # and pressure p = ρ + π/30*(A11*ρ1**2 + 2*A12*ρ1*ρ2 + A22*ρ2**2),
 # where ρ = ρ1 + ρ2.  Some tweaking of the initial guess may be needed
 # to encourage the solver to find distinct coexisting state points.
@@ -45,19 +45,28 @@ from numpy import pi as π
 from numpy import sqrt, exp
 from numpy import log as ln
 from scipy.optimize import root
+from wallDFT import df_header, df_to_agr
 
 parser = argparse.ArgumentParser(description='experimental DPD LLE profiles')
+parser.add_argument('--max-iters', default='10^3', help='max number of iterations, default 10^3')
+parser.add_argument('--tolerance', default='1e-10', type=float, help='convergence tol, default 1e-10')
+parser.add_argument('--alpha', default=0.1, type=float, help='mixing fraction, default 0.1')
+parser.add_argument('--zmax', default=7.0, type=float, help='maximum distance in z, default 7.0')
+parser.add_argument('--dz', default=1e-3, type=float, help='spacing in z, default 1e-3')
 parser.add_argument('-r', '--rho', default=3.0, type=float, help='baseline density, default 3.0')
 parser.add_argument('-a', '--allA', default='25,30,20', help='A11, A12, A22, default 25, 30, 20')
 parser.add_argument('-g', '--guess', default='0.0001,0.99', help='initial guess x, default 0.01, 0.9')
 parser.add_argument('--eps', default=1e-6, type=float, help='tolerance to declare coexistence')
 parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
+parser.add_argument('--zcut', default=3.0, type=float, help='cut-off in z, default 3.0')
+parser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
+parser.add_argument('-s', '--show', action='store_true', help='plot the density profile')
+parser.add_argument('-o', '--output', help='output data for xmgrace, etc')
 args = parser.parse_args()
 
-# define a kernel K(z) and calculate the approximate value of pi/15
+# define a kernel K(z) in -1 < z < 1, and calculate the approximate value of pi/15
 
-dz = 1e-3
-
+dz = args.dz
 z = np.linspace(-1.0, 1.0, round(2.0/dz)+1, dtype=float)
 
 kernel = π/12.0*(1-z)**3*(1+3*z)
@@ -83,8 +92,8 @@ def fun(y, p0, A11, A12, A22):
     a = 1/2*πby15*(A11*x**2 + 2*A12*x*(1-x) + A22*(1-x)**2)
     ρ = (sqrt(1 + 4*a*p0) - 1) / (2*a)
     ρ1, ρ2 = x*ρ, (1-x)*ρ
-    μ1 = ln(ρ1) + πby15*(A11*ρ1 + A12*ρ2)
-    μ2 = ln(ρ2) + πby15*(A12*ρ1 + A22*ρ2)
+    μ1 = ln(ρ1/ρ0) + πby15*(A11*ρ1 + A12*ρ2)
+    μ2 = ln(ρ2/ρ0) + πby15*(A12*ρ1 + A22*ρ2)
     return [μ1[1] - μ1[0], μ2[1] - μ2[0]]
 
 x0 = np.array(eval(f'[{args.guess}]')) # mole fractions in the two phases (initial guess)
@@ -103,12 +112,12 @@ if abs(xb[1]-xb[0]) < args.eps:
 a = 1/2*πby15*(A11*xb**2 + 2*A12*xb*(1-xb) + A22*(1-xb)**2)
 ρb = (sqrt(1 + 4*a*p0) - 1) / (2*a) # a 2-vector containing the total densities
 ρ1b, ρ2b = xb*ρb, (1-xb)*ρb # these are 2-vectors containing the coexisting densities
-μ1 = ln(ρ1b) + πby15*(A11*ρ1b + A12*ρ2b) # 2-vector, should be equal in coexistence
-μ2 = ln(ρ2b) + πby15*(A12*ρ1b + A22*ρ2b) # -- ditto --
-p = ρb + 1/2*πby15*(A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
+μ1 = ln(ρ1b/ρ0) + πby15*(A11*ρ1b + A12*ρ2b) # 2-vector, should be equal in coexistence
+μ2 = ln(ρ2b/ρ0) + πby15*(A12*ρ1b + A22*ρ2b) # -- ditto --
+pb = ρb + 1/2*πby15*(A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
 
 if args.verbose:
-    for v in ['ρb', 'x', 'ρ1b', 'ρ2b', 'μ1', 'μ2', 'p']:
+    for v in ['ρb', 'xb', 'ρ1b', 'ρ2b', 'μ1', 'μ2', 'pb']:
         print(f'{v:>3} =', eval(v))
 
 μ1b, μ2b = [np.mean(μ) for μ in [μ1, μ2]] # consensus 'bulk' values
@@ -116,9 +125,10 @@ if args.verbose:
 # create an array z in [-zmax, zmax] and a computational domain
 # [-zmax+1, zmax-1] within which the convolution operation is valid.
 
-zmax = 7
+zmax = args.zmax
 Lz = zmax - 1
 z = np.linspace(-zmax, zmax, round(2*zmax/dz)+1, dtype=float)
+idx = np.round(z/dz).astype(int) # index with origin z = 0.0 --> 0
 lh_bulk = (z < -Lz)
 rh_bulk = (z > Lz)
 domain = ~lh_bulk & ~rh_bulk
@@ -135,21 +145,24 @@ def clamp_density_profile(ρ, ρb):
     ρ[rh_bulk] = ρb[1]
     return ρ
 
-α = 0.1
-tol = 1e-10
-max_iters = 10**3
+α = args.alpha
+tol = args.tolerance
+max_iters = eval(args.max_iters.replace('^', '**'))
 
 ρ1 = initial_density_profile(ρ1b)
 ρ2 = initial_density_profile(ρ2b)
 
 # Solve the following by Picard iteration :
 # ρ_i(z) = exp[ μ_i - ∑_j ∫ dz' ρ_j(z') U_ij(z-z') ]
+# The integrals are evaluated as convolutions. Outside the domain
+# where the convolution is valid, the density profiles are clamped to
+# the bulk values.
 
 for i in range(max_iters):
     ρ1_kern = dz * np.convolve(ρ1, kernel, mode='same')
     ρ2_kern = dz * np.convolve(ρ2, kernel, mode='same')
-    ρ1_new = clamp_density_profile(exp(μ1b - A11*ρ1_kern - A12*ρ2_kern), ρ1b)
-    ρ2_new = clamp_density_profile(exp(μ2b - A12*ρ1_kern - A22*ρ2_kern), ρ2b)
+    ρ1_new = clamp_density_profile(ρ0*exp(μ1b - A11*ρ1_kern - A12*ρ2_kern), ρ1b)
+    ρ2_new = clamp_density_profile(ρ0*exp(μ2b - A12*ρ1_kern - A22*ρ2_kern), ρ2b)
     ρ1 = (1-α)*ρ1 + α*ρ1_new
     ρ2 = (1-α)*ρ2 + α*ρ2_new
     int_abs_Δρ1 = np.trapz(np.abs(ρ1_new-ρ1), dx=dz)
@@ -157,11 +170,32 @@ for i in range(max_iters):
     if int_abs_Δρ1 + int_abs_Δρ2 < tol: # early escape if converged
         break
 
-import matplotlib.pyplot as plt
+ρ = ρ1 + ρ2 # total density
+x = ρ1 / ρ # local mole fraction
 
-region = ~(z<-3) & ~(z>3)
+if args.output:
 
-plt.plot(z[region], ρ1[region])
-plt.plot(z[region], ρ2[region])
+    import pandas as pd
 
-plt.show()
+    # Here we don't want to output every point with a discretisation
+    # dz = 1e-3 or smaller, rather we downsample to a coarser grid.
+
+    filtered = (np.mod(idx, round(args.gridz/dz)) == 0) # binary array
+    grid = domain & filtered # values to write out
+    data = np.array([z[grid], ρ1[grid], ρ2[grid], ρ[grid], x[grid]]).transpose()
+    df = pd.DataFrame(data, columns=['z', 'ρ1', 'ρ2', 'ρ', 'x'])
+    with open(args.output, 'w') as f:
+        print(df_to_agr(df), file=f)
+        print('Data:', ', '.join(df_header(df)), 'written to', args.output)
+ 
+elif args.show:
+
+    import matplotlib.pyplot as plt
+
+    region = ~(z<-args.zcut) & ~(z>args.zcut)
+    plt.plot(z[region], ρ1[region])
+    plt.plot(z[region], ρ2[region])
+    plt.plot(z[region], ρ[region])
+    plt.plot(z[region], x[region])
+
+    plt.show()
