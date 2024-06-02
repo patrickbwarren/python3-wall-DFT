@@ -136,18 +136,18 @@ a = 1/2*πby15*(A11*xb**2 + 2*A12*xb*(1-xb) + A22*(1-xb)**2)
 μ2 = ln(ρ2b/ρ0) + πby15*(A12*ρ1b + A22*ρ2b) # -- ditto --
 p = ρb + 1/2*πby15*(A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
 
-if args.verbose > 1 or args.exclude:
-    print('Coexistence problem solution')
-    for v in ['ρb', 'xb', 'ρ1b', 'ρ2b', 'μ1', 'μ2', 'p']:
-        print(f'{v:>5} =\t', '\t'.join(map(str, eval(v))))
-
 # Consensus 'bulk' values used in the calculations below
 
 μ1b, μ2b, pb = map(np.mean, [μ1, μ2, p]) 
 
-if args.exclude:
+if args.verbose > 1 or args.exclude:
+    print('Coexistence problem solution')
+    for v in ['ρb', 'xb', 'ρ1b', 'ρ2b', 'μ1', 'μ2', 'p']:
+        print(f'{v:>5} =\t', '\t'.join(map(str, eval(v))))
     for v in ['μ1b', 'μ2b', 'pb']:
         print(f'{v:>5} =\t', eval(v), '\t(consensus)')
+
+if args.exclude:
     exit()
 
 # Create an array z in [-zmax, zmax] and a computational domain
