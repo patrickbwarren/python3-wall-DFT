@@ -186,7 +186,7 @@ if args.output:
     df = pd.DataFrame(data, columns=['z', 'ρ1', 'ρ2', 'ρ', 'x'])
     with open(args.output, 'w') as f:
         print(df_to_agr(df), file=f)
-        print('Data:', ', '.join(df_header(df)), 'written to', args.output)
+    print('Data:', ', '.join(df_header(df)), 'written to', args.output)
  
 elif args.show:
 
