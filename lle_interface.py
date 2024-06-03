@@ -214,9 +214,9 @@ x = ρ1 / ρ # local mole fraction
 # The inner integrals are evaluated using convolution again
 
 ρ1_kern, ρ2_kern = map(kernel_convolve, [ρ1, ρ2])
-negω1 = ρ1 + 1/2 * ρ1 * (A11*ρ1_kern + A12*ρ2_kern)
-negω2 = ρ2 + 1/2 * ρ2 * (A12*ρ1_kern + A22*ρ2_kern)
-negω = negω1 + negω2
+negωN1 = 1 + 1/2 * (A11*ρ1_kern + A12*ρ2_kern)
+negωN2 = 1 + 1/2 * (A12*ρ1_kern + A22*ρ2_kern)
+negω = ρ1*negωN1 + ρ2*negωN2
 negΩbyA = integral(negω[domain])
 twoLz = length(z[domain])
 γ = pb*twoLz - negΩbyA
@@ -233,8 +233,8 @@ if args.output:
 
     filtered = (np.mod(idx, round(args.gridz/dz)) == 0) # binary array
     grid = domain & filtered # values to write out
-    data = np.array([z[grid], ρ1[grid], ρ2[grid], ρ[grid], x[grid], negω1[grid], negω2[grid], negω[grid]])
-    df = pd.DataFrame(data.transpose(), columns=['z', 'ρ1', 'ρ2', 'ρ', 'x', 'negω1', 'negω2', 'negω'])
+    data = np.array([z[grid], ρ1[grid], ρ2[grid], ρ[grid], x[grid], negωN1[grid], negωN2[grid], negω[grid]])
+    df = pd.DataFrame(data.transpose(), columns=['z', 'ρ1', 'ρ2', 'ρ', 'x', 'negωN1', 'negωN2', 'negω'])
     with open(args.output, 'w') as f:
         print(df_to_agr(df), file=f)
     print('Data:', ', '.join(df_header(df)), 'written to', args.output)
@@ -250,8 +250,8 @@ elif args.show:
     #plt.plot(z[region], Δρ1[region])
     #plt.plot(z[region], Δρ2[region])
     if args.thermodynamics:
-        plt.plot(z[region], negω1[region])
-        plt.plot(z[region], negω2[region])
+        plt.plot(z[region], negωN1[region])
+        plt.plot(z[region], negωN2[region])
         plt.plot(z[region], pb - negω[region])
     #plt.plot(z[region], ρ[region])
     #plt.plot(z[region], x[region])
