@@ -146,6 +146,22 @@ setting see Henderson in [Mol. Phys. **74**, 1125
 (1991)](https://doi.org/10.1080/00268979100102851).  I am grateful to
 Bob Evans for drawing my attention to this.
 
+### Liquid-liquid phase equilibria
+
+The code `lle_interface.py` calculates the density profiles and
+interfacial properties (surface excesses, surface tension) for
+coexisting phases in a binary DPD mixture.  The methods are similar to
+those above, except there is no wall potential and there are two
+density fields.  The trickiest part is to solve for the phase
+equilibrium.  This is done assuming NPT, where the pressure is set by
+specifying a baseline (default ρ = 3, *A* = 25).  For fixed pressure
+there are two coexisting phase compositions *x*<sub>1</sub> and
+*x*<sub>1</sub>.  These are obtained by solving numerically for
+equality of chemical potentials in the coexisting phases.  The initial
+part of the code computes these compositions, and the associated
+chemical potentials of the two components (the same in both phases).
+These are then used in the density profile calculation.
+
 ### Copying
 
 This program is free software: you can redistribute it and/or modify

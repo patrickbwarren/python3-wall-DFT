@@ -134,8 +134,7 @@ class Wall:
             h0, h1 = [np.max(np.abs(x)) for x in [Δρ, Δρ_new]]
             α = alpha * h0 / (h1 + eps)
             Δρ_new = (1-α)*Δρ + α*Δρ_new # mixing rule
-            ΔΔρ = Δρ - Δρ_new
-            int_abs_ΔΔρ = integral(np.abs(ΔΔρ), dz)
+            int_abs_ΔΔρ = integral(np.abs(Δρ_new - Δρ), dz)
             if int_abs_ΔΔρ < tol: # early escape if converged
                 break
             Δρ = Δρ_new

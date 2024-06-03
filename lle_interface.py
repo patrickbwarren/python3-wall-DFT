@@ -21,22 +21,7 @@
 # along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-# First, solve for liquid-liquid coexistence in a DPD binary mixture
-# described by mean-field free energy f = fid + fex where
-#  fid = ρ1 (ln(ρ1/ρ0) - 1) + ρ2 (ln(ρ2/ρ0) - 1),
-#  fex = π/30 (A11 ρ1² + 2 A12 ρ1 ρ2 + A22 ρ2²).
-# The corresponding chemical potentials are (standard state is ρ0):
-#  μ1 = ln(ρ1/ρ0) + π/15*(A11*ρ1 + A12*ρ2),
-#  μ2 = ln(ρ2/ρ0) + π/15*(A12*ρ1 + A22*ρ2),
-# and pressure p = ρ + π/30*(A11*ρ1**2 + 2*A12*ρ1*ρ2 + A22*ρ2**2),
-# where ρ = ρ1 + ρ2.  Some tweaking of the initial guess may be needed
-# to encourage the solver to find distinct coexisting state points.
-
-# To impose NPT we solve a quadratic equation for ρ which is
-#  π/30 [A11 x² + 2 A12 x(1-x) + A22 (1-x)²] ρ² + ρ - p0 = 0,
-# on writing the pressure in terms of ρ1, ρ2 = xρ, (1-x)ρ.
-
-# Benchmarks: -a 25,30,20 (default) ; -a 25,50,25 ; -a 25,50,20 --tol=1e-9
+# Benchmarks: -A 25,30,20 (default) ; -A 25,50,25 ; -A 25,50,20 --tol=1e-9
 # Γ1, Γ2, γ = -0.1060648627316102   -0.1111889714951698   1.3385683713932508
 # Γ1, Γ2, γ = -0.20759700220097246  -0.20759700212922425  3.676873998304302
 # Γ1, Γ2, γ = -0.2326749744700184   -0.2600528420615002   4.183680028074775
@@ -57,10 +42,11 @@ parser.add_argument('--zmax', default=6.0, type=float, help='maximum distance in
 parser.add_argument('--dz', default=1e-3, type=float, help='spacing in z, default 1e-3')
 parser.add_argument('--zcut', default=3.0, type=float, help='cut-off in z, default 3.0')
 parser.add_argument('--gridz', default=0.02, type=float, help='filter spacing in z, default 0.02')
+parser.add_argument('--Abase', default=25.0, type=float, help='baseline A, default 25.0')
 parser.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
-parser.add_argument('-e', '--eps', default=1e-6, type=float, help='tolerance to declare coexistence')
-parser.add_argument('-r', '--rho', default=3.0, type=float, help='baseline density, default 3.0')
-parser.add_argument('-a', '--all', default='25,30,20', help='A11, A12, A22, default 25, 30, 20')
+parser.add_argument('--eps', default=1e-6, type=float, help='tolerance to declare coexistence')
+parser.add_argument('--rho', default=3.0, type=float, help='baseline density, default 3.0')
+parser.add_argument('-A', '--Alist', default='25,30,20', help='A11, A12, A22, default 25, 30, 20')
 parser.add_argument('-g', '--guess', default='0.0001,0.99', help='initial guess x, default 0.0001, 0.99')
 parser.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 parser.add_argument('-s', '--show', action='store_true', help='plot the density profiles')
@@ -69,7 +55,7 @@ parser.add_argument('-x', '--exclude', action='store_true', help='phase equilibr
 parser.add_argument('-o', '--output', help='output data for xmgrace, etc')
 args = parser.parse_args()
 
-def integral(f): # convenient shorthand for numpy trapz 
+def integral(f): # wrapper around numpy trapz 
     return np.trapz(f, dx=dz)
 
 def kernel_convolve(ρ): # wrapper around numpy convolve
@@ -105,15 +91,28 @@ if args.verbose:
     print(f'exact result π/15 =\t{π/15}')
 
 ρ0 = args.rho
-A11, A12, A22 = eval(args.all) # returns a tuple
+A11, A12, A22 = eval(args.Alist) # returns a tuple
 
-p0 = ρ0 + 1/2 * πby15 * A11 * ρ0**2 # reference pressure (NPT)
+p0 = ρ0 + 1/2 * πby15 * args.Abase * ρ0**2 # reference pressure (NPT)
 
 if args.verbose:
     print(f'ρ0, A11, A12, A22 = {ρ0} {A11} {A12} {A22}')
     print(f'pressure fixed at p0 = {p0}')
 
-# First we must solve the coexistence problem.
+# First, solve for liquid-liquid coexistence in a DPD binary mixture
+# described by mean-field free energy f = fid + fex where
+#  fid = ρ1 (ln(ρ1/ρ0) - 1) + ρ2 (ln(ρ2/ρ0) - 1),
+#  fex = π/30 (A11 ρ1² + 2 A12 ρ1 ρ2 + A22 ρ2²).
+# The corresponding chemical potentials are (standard state is ρ0):
+#  μ1 = ln(ρ1/ρ0) + π/15*(A11*ρ1 + A12*ρ2),
+#  μ2 = ln(ρ2/ρ0) + π/15*(A12*ρ1 + A22*ρ2),
+# and pressure p = ρ + π/30*(A11*ρ1**2 + 2*A12*ρ1*ρ2 + A22*ρ2**2),
+# where ρ = ρ1 + ρ2.  Some tweaking of the initial guess may be needed
+# to encourage the solver to find distinct coexisting state points.
+
+# To impose NPT we solve a quadratic equation for ρ which is
+#  π/30 [A11 x² + 2 A12 x(1-x) + A22 (1-x)²] ρ² + ρ - p0 = 0,
+# on writing the pressure in terms of ρ1, ρ2 = xρ, (1-x)ρ.
 
 # Use y = ln(x/(1-x)) which inverts to x = 1/(1+exp(-y)).  Note the
 # function takes y as a 2-vector corresponding to the two state
@@ -149,7 +148,7 @@ a = 1/2 * πby15 * (A11*xb**2 + 2*A12*xb*(1-xb) + A22*(1-xb)**2)
 μ2 = ln(ρ2b/ρ0) + πby15 * (A12*ρ1b + A22*ρ2b) # -- ditto --
 p = ρb + 1/2 * πby15 * (A11*ρ1b**2 + 2*A12*ρ1b*ρ2b + A22*ρ2b**2) # -- ditto --
 
-# Consensus 'bulk' values used in the calculations below
+# Consensus 'bulk' values used in the density profile calculations.
 
 μ1b, μ2b, pb = map(np.mean, [μ1, μ2, p]) 
 
@@ -173,17 +172,17 @@ lh_bulk = (z < 1-zmax)
 rh_bulk = (z > zmax-1)
 domain = ~lh_bulk & ~rh_bulk
 
-α = args.alpha
-tol = args.tolerance
-max_iters = eval(args.max_iters.replace('^', '**'))
-
-ρ1, ρ2 = map(initial_density_profile, [ρ1b, ρ2b])
-
 # Solve the following by Picard iteration :
 #  ρ_i(z) = exp[ μ_i - ∑_j ∫ dz' ρ_j(z') U_ij(z-z') ]
 # The integrals are evaluated as convolutions. Outside the domain
 # where the convolution is valid, the density profiles are clamped to
 # the bulk values.
+
+α = args.alpha
+tol = args.tolerance
+max_iters = eval(args.max_iters.replace('^', '**'))
+
+ρ1, ρ2 = map(initial_density_profile, [ρ1b, ρ2b])
 
 for i in range(max_iters):
     ρ1_kern, ρ2_kern = map(kernel_convolve, [ρ1, ρ2])
