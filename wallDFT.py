@@ -43,7 +43,7 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
         self.abulk = self.add_argument('--Abulk', default='25', help='bulk repulsion amplitude, default 25')
         self.awall = self.add_argument('--Awall', default='10', help='wall repulsion amplitude, default 10')
         self.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
-        self.add_argument('-c', '--continuum', action='store_true', help='if set use a continuum half-space wall')
+        self.add_argument('-c', '--continuum', action='store_true', help='use a continuum half-space wall')
         self.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 
     def add_argument(self, *args, **kwargs):
@@ -86,7 +86,7 @@ class Wall:
     # We omit the 'A' factor, and restore it when solving for the
     # density profile.  The domain z in [-1, 1] here includes the
     # ends.  This means that np.trapz is equivalent to np.conv since
-    # the endpoints are zero.
+    # the endpoints are zero.  The integral should be π/15.
 
     def __init__(self, dz=1e-3, zmax=11.0):
         self.dz = dz
@@ -126,10 +126,10 @@ class Wall:
 
     def solve(self, rhob, Abulk, max_iters=300, alpha=0.1, tol=1e-10, eps=1e-10):
         z, dz = self.z, self.dz
-        ukernel, expneguwall = Abulk*self.kernel, self.expneguwall
+        kernel, expneguwall = self.kernel, self.expneguwall
         Δρ = rhob * (expneguwall - 1) # initial guess
         for i in range(max_iters):
-            uself = convolve(Δρ, ukernel, dz)
+            uself = Abulk * convolve(Δρ, kernel, dz)
             Δρ_new = rhob * (expneguwall*exp(-uself) - 1) # new guess
             h0, h1 = [np.max(np.abs(x)) for x in [Δρ, Δρ_new]]
             α = alpha * h0 / (h1 + eps)
@@ -158,21 +158,21 @@ class Wall:
         return integral(np.abs(self.Δρ[bulk]), self.dz)
 
     # Calculate the wall tension by first calculating the grand
-    # potential per unit area given by Ω/A = ∫ dz ω(z) where the
-    # density ω(z) = - ρ(z) - 1/2 ρ(z) ∫ dz' ρ(z') U(z-z').  The
+    # potential per unit area given by Ω/A = ∫ dz ρ(z) ωN(z) where the
+    # per-particle ωN(z) = - 1 - 1/2 ∫ dz' ρ(z') U(z-z').  The
     # z-integration limits are 0 to ∞ (= Lz) but in any case the
     # density ρ(z) vanishes for z < 0.  The function U(z) is the
-    # integrated DPD potential (ukernel).  The corresponding pressure
-    # (negative ω in bulk) is p = ρb + 1/2 ρb² ∫ dz U(z).  With these
-    # quantities the wall tension γ = Ω/A + p Lz.
+    # integrated DPD potential Abulk*kernel.  The corresponding
+    # pressure (negative ω in bulk) is p = ρb + 1/2 ρb² ∫ dz U(z).
+    # With these quantities the wall tension γ = Ω/A + p Lz.
 
     def wall_tension(self):
-        z, dz, domain = self.z, self.dz, self.domain
-        ukernel, Δρ, ρb = self.Abulk*self.kernel, self.Δρ, self.ρb
-        ρ = truncate_to_zero(self.ρb + Δρ, z)
-        negω = ρ + 1/2 * ρ * convolve(ρ, ukernel, dz)
-        negΩbyA = integral(negω[domain], dz)
-        p = ρb + 1/2 * ρb**2 * integral(ukernel, dz)
+        z, dz, domain, kernel = self.z, self.dz, self.domain, self.kernel
+        Abulk, πby15, Δρ, ρb = self.Abulk, self.πby15, self.Δρ, self.ρb
+        ρ = truncate_to_zero(ρb + Δρ, z)
+        negωN = 1 + 1/2 * Abulk * convolve(ρ, kernel, dz)
+        negΩbyA = integral(ρ[domain]*negωN[domain], dz)
+        p = ρb + 1/2 * πby15 *Abulk * ρb**2
         Lz = length(z[domain]) # equiv to integral(np.ones_like(z[domain]), dz)
         γ = p*Lz - negΩbyA
         return γ, p, Lz

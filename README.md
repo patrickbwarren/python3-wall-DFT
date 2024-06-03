@@ -6,7 +6,7 @@ This code computes the density profile, surface excess, and wall
 tension, for a fluid of pure dissipative particle dynamics (DPD)
 beads against a wall, using a mean-field density functional theory (DFT).
 
-The codes are
+The codes are:
 
 * `wall_dft_single.py` : solve a single state point;
 * `wall_dft_awall_scan.py` : solve for an array of wall repulsion amplitudes;
@@ -21,7 +21,9 @@ forthcoming publication in the area.
 
 Any other scripts in this repository are experimental; you are welcome
 to investigate them and use them, but they are not particularly well
-documented !
+documented !  See:
+
+* `lle_interface.py` : solve liquid-liquid phase equilibria.
 
 ### What's being solved here?
 
