@@ -74,8 +74,7 @@ wall (see below) (*z* ≥ 0). The grand potential per unit area Ω / *A*
 = ∫ d*z* ρ(*z*) ω<sub>N</sub>(*z*) where ω<sub>N</sub>(z) = − 1 − ½ ∫
 d*z*' ρ(*z*') *U*(*z*−*z*').  The bulk grand potential per unit volume
 needed to calculate γ is ω<sub>b</sub> = − *p* where *p* =
-ρ<sub>b</sub> + ½ ρ<sub>b</sub><sup>2</sup> ∫ d*z* *U*(*z*) is the
-bulk pressure.
+ρ<sub>b</sub> + ½ ρ<sub>b</sub><sup>2</sup> ∫ d*z* *U*(*z*) is the pressure.
 
 It follows from classical thermodynamics that dγ = − Γ dμ (Gibbs
 isotherm). It is also true that d*p* = ρ dμ (Gibbs-Duhem relation).
