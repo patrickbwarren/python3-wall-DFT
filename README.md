@@ -163,6 +163,14 @@ part of the code computes these compositions, and the associated
 chemical potentials of the two components (the same in both phases).
 These are then used in the density profile calculation.
 
+### Use of direct correlation function
+
+The code `dpd_cr.py` investigtes using the direct corelation function
+*c*(*r*) in the DFT rather than *U*(*r*), using `pyHNC.py`
+from
+[python3-HNC-solver](https://github.com/patrickbwarren/python3-HNC-solver)
+to solve for this.  Preliminary work at present.
+
 ### Copying
 
 This program is free software: you can redistribute it and/or modify
