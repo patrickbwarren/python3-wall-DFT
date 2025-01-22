@@ -123,7 +123,10 @@ renorm = Uc[0]/(A*Ua[0]) # note that 'A' is included in Uc by use of 'c'
 
 print()
 print(f'Renormalisation Ucnorm / Uanorm =\t{Ucnorm/(A*Uanorm)}')
-print(f'  Renormalisation Uc[0] / Ua[0] =\t{renorm}\t<-- use this one !\n')
+print(f'          Renormalisation Uc[0] =\t{Uc[0]}')
+print(f'          Renormalisation Ua[0] =\t{A*Ua[0]}')
+print(f'         Renormalisation A*π/12 =\t{A*π/12}')
+print(f'  Renormalisation Uc[0] / Ua[0] =\t{renorm}\t<-- use this value !\n')
 
 print()
 print('Coefficient of ρ² in p = ρ + αAρ²')
@@ -150,28 +153,38 @@ if args.show:
     rcut = r < args.rcut
     zcut = ~(z < 0) & (z < args.rcut)
 
-#    plt.figure(1)
-#    plt.plot(r[rcut], r[rcut]*φ[rcut])
-#    plt.plot(r[rcut], -r[rcut]*c[rcut]/A)
-
     plt.figure(1)
+    plt.plot(r[rcut], g[rcut], label='g(r)')
+    plt.plot(r[rcut], -c[rcut], label='-c(r)')
+    plt.plot(r[rcut], A*φ[rcut], label='φ(r)')
+    plt.legend() ; plt.xlabel('r')
+    plt.show()
+
+    plt.figure(2)
+    plt.plot(r[rcut], r[rcut]*A*φ[rcut], label='r φ(r)')
+    plt.plot(r[rcut], -r[rcut]*c[rcut], label='-r c(r)')
+    plt.legend() ; plt.xlabel('r')
+    plt.show()
+
+    plt.figure(3)
     plt.plot(z[zcut], U[zcut], label='U(z)')
     plt.plot(r[rcut], Ua[rcut], label='Ua(r)')
     plt.plot(r[rcut], Uc[rcut]/A, label='Uc(r) / A')
     plt.legend() ; plt.xlabel('r or z') ; plt.ylabel('vanilla')
+    plt.show()
 
-    plt.figure(2)
+    plt.figure(4)
     plt.plot(z[zcut], U[zcut]*30/π, label='U(z)')
     plt.plot(r[rcut], Ua[rcut]/Uanorm, label='Ua(r)')
     plt.plot(r[rcut], Uc[rcut]/Ucnorm, label='Uc(r) / A')
     plt.legend() ; plt.xlabel('r or z') ; plt.ylabel('normed by integral')
+    plt.show()
 
-    plt.figure(3)
+    plt.figure(5)
     plt.plot(z[zcut], U[zcut]*12/π, label='U(z)')
     plt.plot(r[rcut], Ua[rcut]/Ua[0], label='Ua(r)')
     plt.plot(r[rcut], Uc[rcut]/Uc[0], label='Uc(r) / A')
     plt.legend() ; plt.xlabel('r or z') ; plt.ylabel('normed by f[0]')
-
     plt.show()
 
 if args.output:

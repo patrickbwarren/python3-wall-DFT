@@ -21,6 +21,7 @@
 # along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+import sys
 import wallDFT
 import numpy as np
 import pandas as pd
@@ -68,6 +69,7 @@ df.insert(icol, 'mN.m', df['gamma'] * args.ktbyrc2)
 if args.output:
     df.drop(['conv', 'iters'], axis=1, inplace=True)
     with open(args.output, 'w') as f:
+        print('## '.join(sys.orig_argv), file=f)
         print(df_to_agr(df), file=f)
     print('Data:', ', '.join(df_header(df)), 'written to', args.output)
 else:
