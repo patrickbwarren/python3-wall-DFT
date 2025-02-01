@@ -44,20 +44,20 @@ r, dr = grid.r, grid.deltar # extract the co-ordinate arrays for use below
 if args.verbose:
     print(grid.details)
 
-# The DPD potential, its derivative, and the 1d function, normed by A
+# The DPD potential, its derivative
 
-φ = pyHNC.truncate_to_zero(1/2*(1-r)**2, r, 1) # the DPD potential
-f = pyHNC.truncate_to_zero((1-r), r, 1) # the force f = -dφ/dr
+φ = A * pyHNC.truncate_to_zero(1/2*(1-r)**2, r, 1) # the DPD potential
+f = A * pyHNC.truncate_to_zero((1-r), r, 1) # the force f = -dφ/dr
 
 dz = dr
 z = np.linspace(-1.0, 1.0, round(2.0/dz)+1, dtype=float)
-U = π/12.0*(1-z)**3*(1+3*z)
+U = A*π/12.0*(1-z)**3*(1+3*z)
 U[z<0] = np.flip(U[z>0])
 
 # Solve the HNC problem (need to include 'A' in the supplied potential)
 
 solver = pyHNC.PicardHNC(grid)
-soln = solver.solve(A*φ, ρ, monitor=args.verbose)
+soln = solver.solve(φ, ρ, monitor=args.verbose)
 h, c = soln.hr, soln.cr
 g = 1 + h
 
@@ -99,13 +99,13 @@ Kp0 = aa*π/210 * (63 + 7*bb + 4*cc) # being ∫_0 dr r p(r), evaluated analytic
 
 print('Partial integral limiting values')
 print()
-print('          U(z=0)/A =\t', U[z==0][0], '\tpotential φ(r) integrals')
-print('  2π/A ∫ dr r φ(r) =\t', 2*π*np.trapz(r*φ, dx=dr), '\t(should be close to the above)')
-print('           Ua(0)/A =\t', Ua[0], '\t(should be the same as above)')
+print('          U(z=0) =\t', U[z==0][0], '\tpotential φ(r) integrals')
+print('  2π ∫ dr r φ(r) =\t', 2*π*np.trapz(r*φ, dx=dr), '\t(should be close to the above)')
+print('           Ua(0) =\t', Ua[0], '\t(should be the same as above)')
 print()
-print('- 2π/A ∫ dr r c(r) =\t', 2*π*np.trapz(-r*c, dx=dr)/A, '\tdirect correlation fn c(r) integrals')
-print('           Kc(0)/A =\t', Kc[0]/A, '\t(should be the same as above)')
-print('           Kp(0)/A =\t', Kp0/A, '\t(should be fairly close to the above)\n')
+print('- 2π ∫ dr r c(r) =\t', 2*π*np.trapz(-r*c, dx=dr), '\tdirect correlation fn c(r) integrals')
+print('           Kc(0) =\t', Kc[0], '\t(should be the same as above)')
+print('           Kp(0) =\t', Kp0, '\t(should be fairly close to the above)\n')
 
 # We want to compare the various approximations here.
 # The virial pressure is p = ρ - 2πρ²/3 ∫ dr r³ φ' g.
@@ -130,34 +130,34 @@ pMC, err = 23.65, 0.02
 
 print('Coefficients α in p = ρ + αAρ²')
 print(f'   Monte-Carlo coeff =\t{(pMC-3)/(25*3**2):0.5g} ± {err/(25*3**2):0.5f}')
-print(f'HNC virial EOS coeff =\t{2*π/3 * np.trapz(r**3*f*g, dx=dr)}')
-print(f'  HNC comp EOS coeff = \t{2*π*np.trapz(-r**2*c, dx=dr)/A}')
-print(f'  Alt comp EOS coeff = \t{Kcnorm/A}\t(should be the same as above; from c(r))')
-print(f'  Alt comp EOS coeff = \t{Kpnorm/A}\t(should be fairly close to the above; from p(r))\n')
+print(f'HNC virial EOS coeff =\t{2*π/3 * np.trapz(r**3*f*g, dx=dr)/A}')
+print(f'  HNC comp EOS coeff =\t{2*π*np.trapz(-r**2*c, dx=dr)/A}')
+print(f'  Alt comp EOS coeff =\t{Kcnorm/A}\t(should be the same as above; from c(r))')
+print(f'  Alt comp EOS coeff =\t{Kpnorm/A}\t(should be fairly close to the above; from p(r))\n')
 
-print(f'MF EOS coeff π/30 =\t{π/30}\t(all these should be the same)')
-print(f' Alt MF EOS coeff = \t{2*π*np.trapz(r**2*φ, dx=dr)}')
-print(f' Alt MF EOS coeff = \t{Uanorm}\t<-- use this one !')
-print(f' Alt MF EOS coeff = \t{0.5*np.trapz(U, dx=dr)}\n')
+print(f'MF EOS coeff A*π/30 =\t{A*π/30}\t(all these should be the same)')
+print(f'   Alt MF EOS coeff =\t{2*π*np.trapz(r**2*φ, dx=dr)}')
+print(f'   Alt MF EOS coeff =\t{Uanorm}\t<-- use this one !')
+print(f'   Alt MF EOS coeff =\t{0.5*np.trapz(U, dx=dr)}\n')
 
 # The factor here multiplicatively renormalises A in a mean field DFT
 # approach, which in the present context of a bulk system is the same
 # as the mean field van der Waals EOS.
 
-renorm = Kc[0]/(A*Ua[0]) # note that 'A' is included in Kc by use of 'c'
+renorm = Kc[0]/Ua[0]
 
 print(f'          Renormalisation Kc[0] =\t{Kc[0]}')
 print(f'          Renormalisation Kp[0] =\t{Kp0}\t(should be fairly close to the above)')
-print(f'          Renormalisation Ua[0] =\t{A*Ua[0]}')
+print(f'          Renormalisation Ua[0] =\t{Ua[0]}')
 print(f'         Renormalisation A*π/12 =\t{A*π/12}\n')
 print(f'  Renormalisation Kc[0] / Ua[0] =\t{renorm}\t<-- use this value !\n')
 
 print('Coefficient of ρ² in p = ρ + αAρ²')
 print(f'   Monte-Carlo coeff =\t {(pMC-3)/3**2:0.3g} ± {err/3**2:0.3f}')
 print(f'  MF EOS coeff Aπ/30 =\t{A*π/30}')
-print(f'    Alt MF EOS coeff =\t{A*np.trapz(Ua, dx=dr)}\t(should be the same as above)')
-print(f' renorm MF EOS coeff =\t{renorm*A*np.trapz(Ua, dx=dr)}')
-print(f'HNC virial EOS coeff =\t{2*π/3*A*np.trapz(r**3*f*g, dx=dr)}')
+print(f'    Alt MF EOS coeff =\t{np.trapz(Ua, dx=dr)}\t(should be the same as above)')
+print(f' renorm MF EOS coeff =\t{renorm*np.trapz(Ua, dx=dr)}')
+print(f'HNC virial EOS coeff =\t{2*π/3*np.trapz(r**3*f*g, dx=dr)}')
 print(f'  HNC comp EOS coeff = \t{2*π*np.trapz(-r**2*c, dx=dr)}')
 print(f'  Alt comp EOS coeff = \t{Kcnorm}\t(should be the same as above; from c(r))')
 print(f'  Alt comp EOS coeff = \t{Kpnorm}\t(should be fairly close to the above; from p(r))\n')
@@ -165,9 +165,9 @@ print(f'  Alt comp EOS coeff = \t{Kpnorm}\t(should be fairly close to the above;
 print('Actual pressures')
 print(f'        Monte-Carlo =\t{pMC:0.2f} ± {err:0.2f}')
 print(f'        MF pressure =\t{ρ+A*π*ρ**2/30}')
-print(f'    Alt MF pressure =\t{ρ+A*ρ**2*Uanorm}\t(should be the same as above)')
-print(f' renorm MF pressure =\t{ρ+renorm*A*ρ**2*Uanorm}')
-print(f'HNC virial pressure =\t{ρ+2*π/3*A*ρ**2*np.trapz(r**3*f*g, dx=dr)}\n')
+print(f'    Alt MF pressure =\t{ρ+ρ**2*Uanorm}\t(should be the same as above)')
+print(f' renorm MF pressure =\t{ρ+renorm*ρ**2*Uanorm}')
+print(f'HNC virial pressure =\t{ρ+2*π/3*ρ**2*np.trapz(r**3*f*g, dx=dr)}\n')
 
 if args.show:
 
@@ -177,7 +177,7 @@ if args.show:
     zcut = ~(z < 0) & (z < args.rcut)
 
     plt.figure(1)
-    plt.plot(r[rcut], A*φ[rcut], label='φ(r)')
+    plt.plot(r[rcut], φ[rcut], label='φ(r)')
     plt.plot(r[rcut], p[rcut], label='p(r)')
     plt.plot(r[rcut], -c[rcut], label='-c(r)')
     plt.plot(r[rcut], g[rcut], label='g(r)')
@@ -185,14 +185,14 @@ if args.show:
     plt.show()
 
     plt.figure(2)
-    plt.plot(r[rcut], r[rcut]*A*φ[rcut], label='r φ(r)')
+    plt.plot(r[rcut], r[rcut]*φ[rcut], label='r φ(r)')
     plt.plot(r[rcut], r[rcut]*p[rcut], label='r p(r)')
     plt.plot(r[rcut], -r[rcut]*c[rcut], label='-r c(r)')
     plt.legend() ; plt.xlabel('r')
     plt.show()
 
     plt.figure(3)
-    plt.plot(z[zcut], A*U[zcut], label='U(z)')
+    plt.plot(z[zcut], U[zcut], label='U(z)')
     # plt.plot(r[rcut], Ua[rcut], label='Ua(r)')
     plt.plot(r[rcut], Kp[rcut], label='K[p](z)')
     plt.plot(r[rcut], Kc[rcut], label='K[c](z)')
@@ -200,7 +200,7 @@ if args.show:
     plt.show()
 
     plt.figure(4)
-    plt.plot(z[zcut], U[zcut]*30/π, label='U(z) / norm')
+    plt.plot(z[zcut], U[zcut]*30/(π*A), label='U(z) / norm')
     # plt.plot(r[rcut], Ua[rcut]/Uanorm, label='Ua(z) / norm')
     plt.plot(r[rcut], Kp[rcut]/Kpnorm, label='K[p](z) / norm')
     plt.plot(r[rcut], Kc[rcut]/Kcnorm, label='K[c](z) / norm')
@@ -208,7 +208,7 @@ if args.show:
     plt.show()
 
     plt.figure(5)
-    plt.plot(z[zcut], U[zcut]*12/π, label='U(z) / U(0)')
+    plt.plot(z[zcut], U[zcut]*12/(π*A), label='U(z) / U(0)')
     # plt.plot(r[rcut], Ua[rcut]/Ua[0], label='Ua(z)')
     plt.plot(r[rcut], Kc[rcut]/Kp0, label='K[p](z) / K[p](0)')
     plt.plot(r[rcut], Kc[rcut]/Kc[0], label='K[c](z) / K[c](0)')
