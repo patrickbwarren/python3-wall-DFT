@@ -44,6 +44,7 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
         self.awall = self.add_argument('--Awall', default='10', help='wall repulsion amplitude, default 10')
         self.add_argument('--ktbyrc2', default=12.928, type=float, help='kT/rc² = 12.928 mN.m')
         self.add_argument('-c', '--continuum', action='store_true', help='use a continuum half-space wall')
+        self.add_argument('-u', '--use-cr', action='store_true', help='use a c(r) kernel')
         self.add_argument('-v', '--verbose', action='count', default=0, help='increasing verbosity')
 
     def add_argument(self, *args, **kwargs):
@@ -54,7 +55,7 @@ class ExtendedArgumentParser(argparse.ArgumentParser):
 
 def wall_args(args):
     '''Return a dict of args that can be used as **wall_args(args)'''
-    return {'dz': args.dz, 'zmax': args.zmax}
+    return {'dz': args.dz, 'zmax': args.zmax, 'use_cr':args.use_cr}
 
 def solve_args(args):
     '''Return a dict of args that can be used as **solve_args(args)'''
@@ -79,6 +80,9 @@ def integral(f, dz):
     '''wrapper for numpy trapz'''
     return np.trapz(f, dx=dz)
 
+def r_poly_int(z, a=6.615111, b=0.279768, c=-1.935711): # use the 6-fig accuracy values for A, ρ = 25, 3
+    return a*(1-z)**3/420 * (63+4*c+21*z*(9+8*z) +  4*c*z*(3+6*z+10*z**2+15*z**3) + 7*b*(1+3*z+6*z**2+10*z**3))
+
 class Wall:
 
     # Define the kernel U(z) on the domain -1 < z < 1.  The function
@@ -88,7 +92,7 @@ class Wall:
     # ends.  This means that np.trapz is equivalent to np.conv since
     # the endpoints are zero.  The integral should be π/15.
 
-    def __init__(self, dz=1e-3, zmax=11.0):
+    def __init__(self, dz=1e-3, zmax=11.0, use_cr=False):
         self.dz = dz
         self.zmax = zmax
         self.z = np.linspace(-1.0, zmax, round((1.0+zmax)/dz)+1, dtype=float) # z ∈ [-1, zmax]
@@ -97,7 +101,7 @@ class Wall:
         self.domain = self.not_inside_wall & self.not_above_zmax_minus_one # ditto
         self.idx = np.round(self.z/self.dz).astype(int) # index with origin z = 0.0 --> 0
         z = np.linspace(-1.0, 1.0, round(2.0/self.dz)+1, dtype=float)
-        self.kernel = π/12.0*(1-z)**3*(1+3*z)
+        self.kernel = (2*π/25 * r_poly_int(z)) if use_cr else π/12.0*(1-z)**3*(1+3*z)
         self.kernel[z<0] = np.flip(self.kernel[z>0])
         self.πby15 = integral(self.kernel, dz)
         self.about = 'Wall: zmax, dz, nz = %g, %g, %i' % (self.zmax, self.dz, len(self.z))

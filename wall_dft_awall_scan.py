@@ -69,7 +69,8 @@ df.insert(icol, 'mN.m', df['gamma'] * args.ktbyrc2)
 if args.output:
     df.drop(['conv', 'iters'], axis=1, inplace=True)
     with open(args.output, 'w') as f:
-        print('## '.join(sys.orig_argv), file=f)
+        command_line = ' '.join(sys.orig_argv)
+        print(f'## {command_line}', file=f)
         print(df_to_agr(df), file=f)
     print('Data:', ', '.join(df_header(df)), 'written to', args.output)
 else:
