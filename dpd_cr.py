@@ -128,6 +128,14 @@ Kpnorm = aa*π/420 * (56 + 8*bb + 5*cc) # being ∫ dz Kp(z), evaluated analytic
 
 pMC, err = 23.65, 0.02
 
+print('     HNC compressibility =\t', 1-4*π*ρ*np.trapz(r**2*c, dx=dr))
+print('    Monte-Carlo pressure =\t', pMC, '±', err)
+print('     HNC virial pressure =\t', ρ + 2*π/3*ρ**2*np.trapz(r**3*f*g, dx=dr))
+print('HNC pressure using -c(r) =\t', ρ - 2*π*ρ**2*np.trapz(r**2*c, dx=dr))
+print(' HNC pressure using φ(r) =\t', ρ + 2*π*ρ**2*np.trapz(r**2*φ, dx=dr))
+print(' MF pressure ρ + πAρ²/30 =\t', ρ + π*A*ρ**2/30)
+print()
+
 print('Coefficients α in p = ρ + αAρ²')
 print(f'   Monte-Carlo coeff =\t{(pMC-3)/(25*3**2):0.5g} ± {err/(25*3**2):0.5f}')
 print(f'HNC virial EOS coeff =\t{2*π/3 * np.trapz(r**3*f*g, dx=dr)/A}')
@@ -144,13 +152,11 @@ print(f'   Alt MF EOS coeff =\t{0.5*np.trapz(U, dx=dr)}\n')
 # approach, which in the present context of a bulk system is the same
 # as the mean field van der Waals EOS.
 
-renorm = Kc[0]/Ua[0]
+renorm = 0.8764 # empirically determined as MC excess pressure / MF excess pressure
 
-print(f'          Renormalisation Kc[0] =\t{Kc[0]}')
-print(f'          Renormalisation Kp[0] =\t{Kp0}\t(should be fairly close to the above)')
-print(f'          Renormalisation Ua[0] =\t{Ua[0]}')
-print(f'         Renormalisation A*π/12 =\t{A*π/12}\n')
-print(f'  Renormalisation Kc[0] / Ua[0] =\t{renorm}\t<-- use this value !\n')
+print(f' pMC(ex) / pMF(ex) =\t{(pMC-3)/(A*π*ρ**2/30)}')
+print(f'pHNC(ex) / pMF(ex) =\t{20*np.trapz(r**3*f*g, dx=dr)/A}')
+print(f'     renorm factor =\t{renorm}\t<-- using this value !\n')
 
 print('Coefficient of ρ² in p = ρ + αAρ²')
 print(f'   Monte-Carlo coeff =\t {(pMC-3)/3**2:0.3g} ± {err/3**2:0.3f}')
@@ -163,11 +169,13 @@ print(f'  Alt comp EOS coeff = \t{Kcnorm}\t(should be the same as above; from c(
 print(f'  Alt comp EOS coeff = \t{Kpnorm}\t(should be fairly close to the above; from p(r))\n')
 
 print('Actual pressures')
-print(f'        Monte-Carlo =\t{pMC:0.2f} ± {err:0.2f}')
-print(f'        MF pressure =\t{ρ+A*π*ρ**2/30}')
-print(f'    Alt MF pressure =\t{ρ+ρ**2*Uanorm}\t(should be the same as above)')
-print(f' renorm MF pressure =\t{ρ+renorm*ρ**2*Uanorm}')
-print(f'HNC virial pressure =\t{ρ+2*π/3*ρ**2*np.trapz(r**3*f*g, dx=dr)}\n')
+print(f'            Monte-Carlo =\t{pMC:0.2f} ± {err:0.2f}')
+print(f'            MF pressure =\t{ρ+A*π*ρ**2/30}')
+print(f'        Alt MF pressure =\t{ρ+ρ**2*Uanorm}\t(should be the same as above)')
+print(f'   pressure using -c(r) =\t{ρ+ρ**2*Kcnorm}')
+print(f'    HNC virial pressure =\t{ρ+2*π/3*ρ**2*np.trapz(r**3*f*g, dx=dr)}\n')
+print(f'     renorm MF pressure =\t{ρ+renorm*A*π*ρ**2/30}')
+print(f' alt renorm MF pressure =\t{ρ+renorm*ρ**2*Uanorm}\t(should be the same as above)')
 
 if args.show:
 
