@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copied from https://github.com/patrickbwarren/python3-HNC-solver
-# DO NOT EDIT THIS VERSION -- EDIT THE ONE IN THE ABOVE REPOSITORY AND RE-COPY
-
 # This program is part of pyHNC, copyright (c) 2023 Patrick B Warren (STFC).
+# Additional modifications copyright (c) 2025 Joshua F Robinson (STFC).  
 # Email: patrick.warren{at}stfc.ac.uk.
 
 # This program is free software: you can redistribute it and/or modify
@@ -50,11 +48,13 @@ class Grid:
         self.q = self.deltaq * np.arange(1, self.ng) # ditto
         self.fftwx = pyfftw.empty_aligned(self.ng-1)
         self.fftwy = pyfftw.empty_aligned(self.ng-1)
-        self.fftw = pyfftw.FFTW(self.fftwx, self.fftwy, direction='FFTW_RODFT00',
+        self.fftw = pyfftw.FFTW(self.fftwx, self.fftwy,
+                                direction='FFTW_RODFT00',
                                 flags=('FFTW_ESTIMATE',))
-        r = round(0.5+np.log(self.ng)/np.log(2.0)) # the exponent if ng = 2^r
-        self.details = f'Grid: ng = {self.ng} = 2^{r}, Δr = {self.deltar}, ' \
-            f'Δq = {self.deltaq:0.3g}, |FFTW arrays| = {self.ng-1}'
+        self.parstrings = [f'ng = {self.ng} = 2^{round(np.log2(ng))}',
+                           f'Δr = {self.deltar}', f'Δq = {self.deltaq:0.3g}',
+                           f'|FFTW arrays| = {self.ng-1}']
+        self.details = 'Grid: ' + ', '.join(self.parstrings)
 
     # These functions assume the FFTW has been initialised as above, the
     # arrays r and q exist, as do the parameters Δr and Δq.
@@ -91,14 +91,22 @@ class PicardHNC:
         self.nmonitor = nmonitor
         self.converged = False
         self.warmed_up = False
-        self.details = f'HNC: α = {self.alpha}, tol = {self.tol:0.1e}, npicard = {self.npicard}'
+        self.parstrings = [f'α = {self.alpha}', f'tol = {self.tol:0.1e}',
+                           f'npicard = {self.npicard}']
+        self.name = 'PicardHNC'
+        self.details = f'{self.name}: ' + ', '.join(self.parstrings)
+
+    def oz_solution(self, rho, cq):
+        '''Solve the OZ equation for h in terms of c, in reciprocal space.'''
+        return cq / (1 - rho*cq)
 
     def solve(self, vr, rho, cr_init=None, monitor=False):
         '''Solve HNC for a given potential, with an optional initial guess at cr'''
+        self_name = self.name + '.solve' # used in reporting below
         cr = np.copy(cr_init) if cr_init is not None else np.copy(self.cr) if self.warmed_up else -np.copy(vr)
         for i in range(self.npicard):
             cq = self.grid.fourier_bessel_forward(cr) # forward transform c(r) to c(q)
-            eq = cq / (1 - rho*cq) - cq # solve the OZ equation for e(q)
+            eq = self.oz_solution(rho, cq) - cq # solve the OZ equation for e(q) = h(q) - c(q)
             er = self.grid.fourier_bessel_backward(eq) # back transform e(q) to e(r)
             cr_new = np.exp(-vr+er) - er - 1 # iterate with the HNC closure
             cr = self.alpha * cr_new + (1-self.alpha) * cr # apply a Picard mixing rule
@@ -107,7 +115,7 @@ class PicardHNC:
             self.error = np.sqrt(np.trapz((cr_new - cr)**2, dx=self.grid.deltar)) # convergence test
             self.converged = self.error < self.tol
             if monitor and (i % self.nmonitor == 0 or self.converged):
-                iter_s = f'pyHNC.solve: Picard iteration %{len(str(self.npicard))}d,' % i
+                iter_s = f'{self_name}: Picard iteration %{len(str(self.npicard))}d,' % i
                 print(f'{iter_s} error = {self.error:0.3e}')
             if self.converged:
                 break
@@ -121,11 +129,122 @@ class PicardHNC:
             pass
         if monitor:
             if self.converged:
-                print('pyHNC.solve: Picard converged')
+                print(f'{self_name}: Picard converged')
             else:
-                print(f'pyHNC.solve: Picard iteration {i:3d}, error = {self.error:0.3e}')
-                print('pyHNC.solve: Picard failed to converge')
+                print(f'{self_name}: Picard iteration {i:3d}, error = {self.error:0.3e}')
+                print(f'{self_name}: Picard failed to converge')
         return self # the user can name this 'soln' or something
+
+# Below, the above is sub-classed to redefine the OZ equation in terms
+# of the product of the solvent structure factor S(q).  This enables
+# the above machinery to be re-used for solving the problem of an
+# infinitely dilute solute inside the solvent.
+
+# The math here is as follows.  In a two-component system the OZ equations are
+#   h00q = c00q + rho0 c00q h00q + rho1 c01q h01q,
+#   h01q = c01q + rho0 c01q h00q + rho1 c11q h01q,
+#   h01q = c01q + rho0 c00q h01q + rho1 c01q h11q,
+#   h11q = c11q + rho0 c01q h01q + rho1 c11q h11q.
+# (the equivalence of the two off-diagonal expressions can be verified).
+# In the limit rho1 --> 0 the second component becomes an infinitely
+# dilute solute in the first component (solvent).
+# The OZ relations in this limit are
+#   h00q = c00q + rho0 c00q h00q,
+#   h01q = c01q + rho0 c01q h00q
+#   h01q = c01q + rho0 c00q h01q,
+#   h11q = c11q + rho0 c01q h01q.
+# The first of these is simply the one-component OZ relation for the solvent.
+# The second of these can be written as
+#   h01q = c01q S00q
+# where S00q = 1 + rho0 h00q is the solvent structure factor This
+# should be supplemented by the HNC closure in the off-diagonal
+# component.  To solve this case therefore we ask the user to provide
+# S00q, and change the OZ relation that the solver uses.  This is what
+# is implemented below.
+
+# This solver class can also be repurposed to solve the mean-field DFT
+# problem in Archer and Evans, J. Chem. Phys. 118(21), 9726-46 (2003).
+
+# The governing equation corresponds to eq (15) in the above paper and
+# describes the density of solvent particles around a test solute
+# particle.  This density can be written as rho0 g01 and eq (15) can
+# be cast into the form ln g01 = - v01 - rho0 h01 * v00 where '*'
+# denotes a convolution and h01 = g01 - 1.  Given a solution to this,
+# the solvent-mediated potential between the test particle and a
+# second particle is expressed in eq (10) in the above paper which can
+# be written W12 = rho0 h01 * v02.  Given the privileged role of the
+# test particle it is apparent that this approach doesn't necessarily
+# satisfy reciprocity W12 = W21 (discussed in Archer + Evans), but one
+# might hope the deviations are small.
+
+# If we define e01 = - rho0 h01 * v00 and c01 = h01 - e01, the
+# governing equation can be written as the pair
+#  h01q = c01q / (1 + rho0 v00q),
+#  ln g01 = - v01 + e01.
+# In this form they strongly resemble the problem of the infinitely
+# dilute solute in HNC solved above, with the only change being to the
+# replace the OZ relation.  Note that c01 and e01 as defined are NOT
+# the direct and indirect correlation functions since this mean-field
+# DFT approach is an RPA-HNC hybrid in some sense.
+
+# To utilise the code for this problem instantiate SolutePicardHNC
+# using 1 / (1 + rho0 v00q) instead of S00q, or replace this in an
+# existing instantiation.
+
+# Finally the solver class can also be repurposed to solve the vanilla
+# RISM equations for homodimers.  The RISM eqs H = Ω.C.Ω + Ω.C.R.H
+# closed by HNC reduce in the case of infinitely dilute heterodimers
+# to the standard HNC problem for the solvent, plus the following for
+# the site-solvent functions
+#  h01q = (c01q + omega12q c02q) (1 + rho0 h00q),
+#  h02q = (c02q + omega12q c01q) (1 + rho0 h00q),
+# where omega12q = sin(ql) / (ql) for a rigid bond.  From these it is
+# clear that in the homodimer case, utilising S00q = 1 + rho0 h00q,
+#  h01q = h02q = c01q S00q (1 + omega12q).
+# This is in the form required to repurpose the solute OZ relation.
+
+# To utilise the code for this problem instantiate SolutePicardHNC
+# using S00q (1 + omega12q) instead of S00q, or replace this in an
+# existing instantiation.
+
+class SolutePicardHNC(PicardHNC):
+    '''Subclass for infinitely dilute solute inside solvent.'''
+
+    def __init__(self, S00q, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.S00q = S00q
+        self.name = 'SolutePicardHNC'
+        self.details = f'{self.name}: ' + ', '.join(self.parstrings)
+
+    def oz_solution(self, rho, cq): # rho is not used here
+        '''Solve the modified OZ equation for h, in reciprocal space.'''
+        return self.S00q * cq
+
+    def solve(self, vr, cr_init=None, monitor=False):
+        return super().solve(vr, 0.0, cr_init, monitor) # rho = 0.0 is not needed
+
+# Below, cases added by Josh
+
+class TestParticleRPA(PicardHNC):
+    '''Subclass for mean-field DFT approach.'''
+    
+    def oz_solution(self, rho, cq):
+        '''Solution to the OZ equation in reciprocal space.'''
+        return cq / (1 + rho*self.vq) # force RPA closure in reciprocal term
+
+    def solve(self, vr, *args, **kwargs):
+        self.vq = self.grid.fourier_bessel_forward(vr) # forward transform v(r) to v(q)
+        return super().solve(vr, *args, **kwargs)
+
+class SoluteTestParticleRPA(SolutePicardHNC):
+    
+    def oz_solution(self, rho, cq):
+        '''Solution to the OZ equation in reciprocal space.'''
+        return cq - (self.S00q - 1) * self.vq01 # RPA closure
+
+    def solve(self, vr01, *args, **kwargs):
+        self.vq01 = self.grid.fourier_bessel_forward(vr01) # forward transform v(r) to v(q)
+        return super().solve(vr01, *args, **kwargs)
 
 # Extend the ArgumentParser class to be able to add boolean options, adapted from
 # https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
