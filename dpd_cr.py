@@ -37,8 +37,8 @@ args = parser.parse_args()
 
 A, ρ = eval(args.A), eval(args.rho)
 
-#grid = pyHNC.Grid(ng=2**14, deltar=1e-2) # make the initial working grid
-grid = pyHNC.Grid(ng=2**18, deltar=1e-3) # make the initial working grid
+grid = pyHNC.Grid(ng=2**15, deltar=1e-2) # make the initial working grid
+#grid = pyHNC.Grid(ng=2**18, deltar=1e-3) # make the initial working grid
 r, dr = grid.r, grid.deltar # extract the co-ordinate arrays for use below
 
 if args.verbose:
