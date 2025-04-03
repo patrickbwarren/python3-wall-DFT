@@ -58,7 +58,7 @@ U[z<0] = np.flip(U[z>0])
 
 solver = pyHNC.PicardHNC(grid)
 soln = solver.solve(φ, ρ, monitor=args.verbose)
-h, c = soln.hr, soln.cr
+h, c, cq = soln.hr, soln.cr, soln.cq
 g = 1 + h
 
 if args.verbose:
@@ -117,6 +117,9 @@ print('           Kp(0) =\t', Kp0, '\t(should be fairly close to the above)\n')
 Uanorm = np.trapz(Ua, dx=dr)
 Kcnorm = np.trapz(Kc, dx=dr)
 
+print('>>>>>> Kcnorm =', Kcnorm)
+print('>>>>>> integl =', -2*π*np.trapz(r**2*c, dx=dr))
+
 Kpnorm = aa*π/420 * (56 + 8*bb + 5*cc) # being ∫ dz Kp(z), evaluated analytically
 
 # For standard DPD at A = 25 and ρ = 3, we have the following table
@@ -172,7 +175,8 @@ print('Actual pressures')
 print(f'            Monte-Carlo =\t{pMC:0.2f} ± {err:0.2f}')
 print(f'            MF pressure =\t{ρ+A*π*ρ**2/30}')
 print(f'        Alt MF pressure =\t{ρ+ρ**2*Uanorm}\t(should be the same as above)')
-print(f'   pressure using -c(r) =\t{ρ+ρ**2*Kcnorm}')
+print(f'  pressure using Kcnorm =\t{ρ+ρ**2*Kcnorm}')
+print(f'   pressure using -c(r) =\t{ρ-2*π*ρ**2*np.trapz(r**2*c, dx=dr)}\t(should be the same as above)')
 print(f'    HNC virial pressure =\t{ρ+2*π/3*ρ**2*np.trapz(r**3*f*g, dx=dr)}\n')
 print(f'     renorm MF pressure =\t{ρ+renorm*A*π*ρ**2/30}')
 print(f' alt renorm MF pressure =\t{ρ+renorm*ρ**2*Uanorm}\t(should be the same as above)')
