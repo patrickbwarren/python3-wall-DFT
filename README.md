@@ -42,9 +42,13 @@ If we consider the case where *U*<sub>ext</sub>(**r**) =
 * ∫ ρ(*z*) [ln ρ(*z*) − 1] + ∫ ρ(*z*) *U*<sub>wall</sub>(*z*) + ½ ∫
   ρ(*z*) ρ(*z*') *U*(*z*−*z*') ,
 
-where *U*(*z*) is a partial integral of *U*(**r**) corresponding to
-the interaction between two parallel sheets of particles at unit density,
-separated by a distance *z*.
+where 
+
+* *U*(*z*) = 2π ∫<sub>|*z*|</sub><sup>∞</sup> *r* d*r* *U*(*r*)
+
+is the partial integral of *U*(**r**) corresponding to the interaction
+between two parallel sheets of particles at unit density, separated by
+a distance *z*.
 
 The corresponding grand potential (per unit area) is given by
 subtracting μ ∫ ρ(*z*) from the above expression, where μ is the
