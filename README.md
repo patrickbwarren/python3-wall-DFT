@@ -44,11 +44,11 @@ If we consider the case where *U*<sub>ext</sub>(**r**) =
 
 where 
 
-* *U*(*z*) = 2π ∫<sub>|*z*|</sub><sup>∞</sup> *r* d*r* *U*(*r*)
+* *U*(*z*) = 2π ∫<sub>|*z*|</sub> *r* d*r* *U*(*r*)
 
-is the partial integral of *U*(**r**) corresponding to the interaction
-between two parallel sheets of particles at unit density, separated by
-a distance *z*.
+is the partial integral (from *r* = |*z*| to ∞) of *U*(**r**)
+corresponding to the interaction between two parallel sheets of
+particles at unit density, separated by a distance *z*.
 
 The corresponding grand potential (per unit area) is given by
 subtracting μ ∫ ρ(*z*) from the above expression, where μ is the
