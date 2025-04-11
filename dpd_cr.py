@@ -197,17 +197,3 @@ if args.show:
     plt.plot(r[rcut], Kc[rcut], label='K[c](z)')
     plt.legend() ; plt.xlabel('z') # ; plt.ylabel('vanilla')
     plt.show()
-
-if args.output:
-
-    import pandas as pd
-
-    rcut = r < args.rcut
-
-    df = pd.DataFrame({'r': r[rcut], 'g': g[rcut]})
-    df_agr = pyHNC.df_to_agr(df)
-
-    with open(args.output, 'w') as f:
-        print(f'# DPD with A = {A:g}, ρ = {ρ:g}, HNC closure\n' + df_agr, file=f)
-
-    print('Written (r, g) to', args.output)
